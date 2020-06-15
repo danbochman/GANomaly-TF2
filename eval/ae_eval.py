@@ -1,7 +1,4 @@
 import os
-
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau
-
 from dataloader.image_generators import train_image_generator
 from models.autoencoders import CAE
 from train.losses import reconstruction_mse
@@ -9,7 +6,7 @@ from train.losses import reconstruction_mse
 
 def main():
     crop_size = 256
-    train_img_gen = train_image_generator("D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/", crop_size=crop_size)
+    test_img_gen = image_generator("D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/", crop_size=crop_size)
 
     cae = CAE(input_shape=(crop_size, crop_size, 1))
     cae.compile(optimizer='adam',
@@ -25,8 +22,10 @@ def main():
 
     history = cae.fit(train_img_gen,
                       callbacks=callbacks,
-                      steps_per_epoch=100,
-                      epochs=20)
+                      steps_per_epoch=1,
+                      epochs=100)
+
+    cae.save('last_model.h5')
 
 
 if __name__ == '__main__':

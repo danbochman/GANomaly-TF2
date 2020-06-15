@@ -15,13 +15,39 @@ def img_roi(img, upper_bound, lower_bound):
     return cropped_img
 
 
+def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
+    for l, t, w, h in bboxes:
+        cond_1 = (vertical <= l) and (l + w <= vertical + interval)
+        cond_2 = (horizontal <= t) and (t + h <= horizontal + interval)
+        if all([cond_1, cond_2]):
+            return True
+
+    return False
+
+
+def img_slice_and_label(img, interval, bboxes):
+    width = img.shape[1]
+    height = img.shape[0]
+    img_slices = []
+    labels = []
+    for vertical in range(0, width - interval, int(interval / 1.2)):
+        for horizontal in range(0, height - interval, int(interval / 1.2)):
+            img_slices.append(img[horizontal:horizontal + interval, vertical:vertical + interval])
+            if bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
+                labels.append(1)
+            else:
+                labels.append(0)
+
+    return img_slices, labels
+
+
 def img_slicer(img, interval):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
     for vertical in range(0, width - interval, interval):
-        for horizonal in range(0, height - interval, interval):
-            img_slices.append(img[horizonal:horizonal + interval, vertical:vertical + interval])
+        for horizontal in range(0, height - interval, interval):
+            img_slices.append(img[horizontal:horizontal + interval, vertical:vertical + interval])
 
     return img_slices
 
