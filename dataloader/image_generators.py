@@ -48,6 +48,8 @@ if __name__ == '__main__':
     for i in range(10):
         img_samples, labels = test_img_gen.__next__()
         defects = img_samples[labels == 1]
-        pass
+        for defect in defects:
+            cv2.imshow('Defect ' + str(i), defect.astype(np.uint8))
+            cv2.waitKey(0)
 
 

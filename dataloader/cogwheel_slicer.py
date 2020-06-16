@@ -30,8 +30,8 @@ def img_slice_and_label(img, interval, bboxes):
     height = img.shape[0]
     img_slices = []
     labels = []
-    for vertical in range(0, width - interval, int(interval / 1.2)):
-        for horizontal in range(0, height - interval, int(interval / 1.2)):
+    for vertical in range(0, width - interval, int(interval)):
+        for horizontal in range(0, height - interval, int(interval)):
             img_slices.append(img[horizontal:horizontal + interval, vertical:vertical + interval])
             if bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
                 labels.append(1)
