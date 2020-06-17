@@ -88,8 +88,6 @@ class CAE(tf.keras.Model):
                        comparison.astype(np.uint8))
             cv2.waitKey(0)
 
-
-
     @staticmethod
     def show_triptych(inputs, reconstructed, diff_map, labels=None):
         for i in range(inputs.shape[0]):
