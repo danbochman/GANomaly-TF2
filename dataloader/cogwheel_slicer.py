@@ -25,37 +25,37 @@ def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
     return False
 
 
-def img_slice_and_label(img, interval, bboxes):
+def img_slice_and_label(img, crop_size, bboxes=None):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
     labels = []
-    for vertical in range(0, width - interval, int(interval)):
-        for horizontal in range(0, height - interval, int(interval)):
-            img_slices.append(img[horizontal:horizontal + interval, vertical:vertical + interval])
-            if bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
-                labels.append(1)
-            else:
-                labels.append(0)
+
+    v_interval = crop_size - necessary_overlap_region(width, crop_size)
+    h_interval = crop_size - necessary_overlap_region(height, crop_size)
+
+    for vertical in range(0, width - crop_size, v_interval):
+        for horizontal in range(0, height - crop_size, h_interval):
+            img_slices.append(img[horizontal:horizontal + crop_size, vertical:vertical + crop_size])
+            if bboxes is not None:
+                if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
+                    labels.append(1)
+                else:
+                    labels.append(0)
 
     return img_slices, labels
 
 
-def img_slicer(img, interval):
-    width = img.shape[1]
-    height = img.shape[0]
-    img_slices = []
-    for vertical in range(0, width - interval, interval):
-        for horizontal in range(0, height - interval, interval):
-            img_slices.append(img[horizontal:horizontal + interval, vertical:vertical + interval])
-
-    return img_slices
+def necessary_overlap_region(axis, interval):
+    quotient, remainder = divmod(axis - interval, interval)
+    overlap_region = int(remainder / (quotient))
+    return overlap_region
 
 
 if __name__ == '__main__':
     img_path = "D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/Cam1/img/PART1_PART1_Cam1_IO__23440-R02-C000_right_000154.png"
     img = cv2.imread(img_path, 0)
-    img = img_roi(img, *RO2_BOUNDS)
-    img_slices = img_slicer(img, 256)
+    # img = img_roi(img, *RO2_BOUNDS)
+    img_slices, _ = img_slice_and_label(img, 256)
     print(len(img_slices))
-    # display_slices(img_slices)
+    display_slices(img_slices)

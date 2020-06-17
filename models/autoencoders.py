@@ -66,8 +66,32 @@ class CAE(tf.keras.Model):
         diff_map = K.abs(reconstructed - inputs)
         return diff_map, reconstructed
 
-    def visualize_anomalies(self, inputs, labels=None):
+    def visualize_anomalies(self, inputs, mode='heatmap', labels=None):
         diff_map, reconstructed = self.diff_map(inputs)
+        if mode == 'triptych':
+            self.show_triptych(inputs, reconstructed, diff_map, labels)
+
+        elif mode == 'heatmap':
+            self.show_heatmap(inputs, diff_map, labels)
+
+    @staticmethod
+    def show_heatmap(inputs, diff_map, labels):
+        for i in range(inputs.shape[0]):
+            comparison = np.zeros((256, 512, 3))
+            comparison[:, :256, :] = inputs[i]
+            overlay = (inputs[i] * 0.7) + (diff_map[i] * 0.3)
+            comparison[:, 256:512:, :] = cv2.applyColorMap(overlay.numpy().astype(np.uint8), cv2.COLORMAP_JET)
+            label = 'Unknown'
+            if labels is not None:
+                label = str(labels[i])
+            cv2.imshow(f'Original   |     Difference Heatmap     |     Label - {label}',
+                       comparison.astype(np.uint8))
+            cv2.waitKey(0)
+
+
+
+    @staticmethod
+    def show_triptych(inputs, reconstructed, diff_map, labels=None):
         for i in range(inputs.shape[0]):
             triptych = np.zeros((256, 256 * 3, 1))
             triptych[:, :256, :] = inputs[i]

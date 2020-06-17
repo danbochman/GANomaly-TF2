@@ -4,7 +4,7 @@ from random import shuffle
 import cv2
 import numpy as np
 
-from dataloader.cogwheel_slicer import img_slicer, img_slice_and_label
+from dataloader.cogwheel_slicer import img_slice_and_label
 from dataloader.annotation_utils import load_annotation_file, annotation_to_bboxes_ltwh
 
 RO2_BOUNDS = (20, 200)  # upper bound, lower bound
@@ -17,7 +17,7 @@ def train_image_generator(folder_path, crop_size=256, ext="png"):
     while True:
         for img_path in img_list:
             img = cv2.imread(img_path, 0)
-            img_slices = img_slicer(img, crop_size)
+            img_slices, _ = img_slice_and_label(img, crop_size)  # _ because no labels
             img_slices = np.stack(img_slices, axis=0)
             img_slices = np.expand_dims(img_slices, axis=-1).astype(np.float)
             yield img_slices, img_slices
