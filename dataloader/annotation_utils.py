@@ -16,7 +16,7 @@ def load_annotation_file(ann_path):
 
 def annotation_to_bboxes_ltwh(ann, classes='defect'):
     """
-    Returns a (left, top, width, height) bbox for each object in the annotation.
+    Returns a (y, x, width, height) bbox for each object in the annotation.
 
     :param dict ann: An image annotation given in supervise.ly format
     :param tuple[str]|list[str]|None classes: The object classes to be extracted (e.g. 'defect' or 'roi').

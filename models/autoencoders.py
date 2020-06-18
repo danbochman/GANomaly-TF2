@@ -3,9 +3,11 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Conv2D, Conv2DTranspose
-from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape
+from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.models import Sequential
+
+from train.losses import reconstruction_mse
 
 
 class CAE(tf.keras.Model):
@@ -89,6 +91,31 @@ class CAE(tf.keras.Model):
 
         elif mode == 'heatmap':
             self.show_heatmap(inputs, diff_map, labels)
+
+    def anomaly_scores(self, inputs):
+        reconstructed = self(inputs)
+        diff = reconstruction_mse(inputs, reconstructed)
+        return diff
+
+    def detect_anomalies(self, inputs, threshold=75):
+        diff_map, _ = self.diff_map(inputs)
+        diff_map = diff_map.numpy()[0].astype(np.uint8)
+        cv2.imshow('diff map', diff_map)
+        cv2.waitKey(0)
+
+        ret, thresh_img = cv2.threshold(diff_map, threshold, 255, cv2.THRESH_BINARY)
+        thresh_img = thresh_img.astype(np.uint8)
+        cv2.imshow('thresh_img map', thresh_img)
+        cv2.waitKey(0)
+
+        kernel = np.ones((5, 5), np.uint8)
+        thresh_img = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
+        cv2.imshow('after opening', thresh_img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        image, contours, hierarchy = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return contours
 
     @staticmethod
     def show_heatmap(inputs, diff_map, labels):

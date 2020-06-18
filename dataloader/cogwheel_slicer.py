@@ -16,9 +16,9 @@ def img_roi(img, upper_bound, lower_bound):
 
 
 def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
-    for l, t, w, h in bboxes:
-        cond_1 = (vertical <= l) and (l + w <= vertical + interval)
-        cond_2 = (horizontal <= t) and (t + h <= horizontal + interval)
+    for y, x, w, h in bboxes:
+        cond_1 = (vertical <= y) and (y + w <= vertical + interval)
+        cond_2 = (horizontal <= x) and (x + h <= horizontal + interval)
         if all([cond_1, cond_2]):
             return True
 
