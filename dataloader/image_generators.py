@@ -45,7 +45,7 @@ def test_image_generator(folder_path, batch_size=32, crop_size=256, ext="png"):
 
 
 if __name__ == '__main__':
-    train_img_gen = train_image_generator("D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/")
+    train_img_gen = train_image_generator("/media/jpowell/hdd/Data/AIS/RO2_OK_images/")
     for i in range(10):
         img_sample = train_img_gen.__next__()
     # test_img_gen = test_image_generator("D:/Razor Labs/Projects/AIS/data/RO2/RO2_NG_images/")

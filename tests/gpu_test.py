@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+tf.debugging.set_log_device_placement(True)
+
 if __name__ == '__main__':
     with tf.compat.v1.Session() as sess:
         with tf.device('/gpu:0'):
