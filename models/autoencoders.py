@@ -7,8 +7,6 @@ from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape
 from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.models import Sequential
 
-from train.losses import reconstruction_mse
-
 
 class CAE(tf.keras.Model):
 
@@ -84,37 +82,42 @@ class CAE(tf.keras.Model):
         diff_map = K.abs(reconstructed - inputs)
         return diff_map, reconstructed
 
-    def visualize_anomalies(self, inputs, mode='heatmap', labels=None):
+    def visualize_anomalies(self, inputs, method='heatmap', labels=None):
         diff_map, reconstructed = self.diff_map(inputs)
-        if mode == 'triptych':
+        if method == 'triptych':
             self.show_triptych(inputs, reconstructed, diff_map, labels)
 
-        elif mode == 'heatmap':
+        elif method == 'heatmap':
             self.show_heatmap(inputs, diff_map, labels)
 
-    def anomaly_scores(self, inputs):
+    def anomaly_scores(self, inputs, metric_fn):
         reconstructed = self(inputs)
-        diff = reconstruction_mse(inputs, reconstructed)
-        return diff
+        score = metric_fn(inputs, reconstructed)
+        return score
 
-    def detect_anomalies(self, inputs, threshold=75):
+    def detect_anomalies(self, inputs, min_threshold=50, percentile=99):
         diff_map, _ = self.diff_map(inputs)
         diff_map = diff_map.numpy()[0].astype(np.uint8)
         cv2.imshow('diff map', diff_map)
-        cv2.waitKey(0)
 
-        ret, thresh_img = cv2.threshold(diff_map, threshold, 255, cv2.THRESH_BINARY)
-        thresh_img = thresh_img.astype(np.uint8)
-        cv2.imshow('thresh_img map', thresh_img)
-        cv2.waitKey(0)
+        diff_map = cv2.GaussianBlur(diff_map, (5, 5), 0)
+        _, mask1 = cv2.threshold(diff_map, min_threshold, 255, cv2.THRESH_BINARY)
+        percentile = np.percentile(diff_map, percentile)
+        _, mask2 = cv2.threshold(diff_map, percentile, 255, cv2.THRESH_BINARY)
+        thresh_img = mask1 * mask2
+        cv2.imshow('mask1 ', mask1.astype(np.uint8))
+        cv2.imshow('mask2 ', mask2.astype(np.uint8))
 
-        kernel = np.ones((5, 5), np.uint8)
+        thresh_img = thresh_img.astype(np.uint8) * 255
+        cv2.imshow('thresh_img', thresh_img)
+
+        kernel = np.ones((3, 3), np.uint8)
         thresh_img = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
         cv2.imshow('after opening', thresh_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-        image, contours, hierarchy = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return contours
 
     @staticmethod

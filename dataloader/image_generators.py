@@ -26,8 +26,8 @@ def train_image_generator(folder_path, batch_size=32, crop_size=256, ext="png"):
 
 
 def test_image_generator(folder_path, batch_size=32, crop_size=256, ext="png"):
-    img_list = [img for img in glob.glob(folder_path + "**/*." + ext, recursive=True)]
-    ann_list = [img for img in glob.glob(folder_path + "**/*." + "json", recursive=True)]
+    img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
+    ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
     # ann_list.pop(0)  # drop meta.json
 
     for img_path, ann_path in zip(img_list, ann_list):
