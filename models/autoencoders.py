@@ -95,29 +95,33 @@ class CAE(tf.keras.Model):
         score = metric_fn(inputs, reconstructed)
         return score
 
-    def detect_anomalies(self, inputs, min_threshold=50, percentile=99):
-        diff_map, _ = self.diff_map(inputs)
+    def detect_anomalies(self, image, min_threshold=50, percentile=99, display=False):
+        diff_map, _ = self.diff_map(image)
         diff_map = diff_map.numpy()[0].astype(np.uint8)
-        cv2.imshow('diff map', diff_map)
 
-        diff_map = cv2.GaussianBlur(diff_map, (5, 5), 0)
-        _, mask1 = cv2.threshold(diff_map, min_threshold, 255, cv2.THRESH_BINARY)
+        diff_map_smoothed = cv2.GaussianBlur(diff_map, (5, 5), 0)
+        _, mask1 = cv2.threshold(diff_map_smoothed, min_threshold, 255, cv2.THRESH_BINARY)
         percentile = np.percentile(diff_map, percentile)
-        _, mask2 = cv2.threshold(diff_map, percentile, 255, cv2.THRESH_BINARY)
+        _, mask2 = cv2.threshold(diff_map_smoothed, percentile, 255, cv2.THRESH_BINARY)
         thresh_img = mask1 * mask2
-        cv2.imshow('mask1 ', mask1.astype(np.uint8))
-        cv2.imshow('mask2 ', mask2.astype(np.uint8))
-
-        thresh_img = thresh_img.astype(np.uint8) * 255
-        cv2.imshow('thresh_img', thresh_img)
 
         kernel = np.ones((3, 3), np.uint8)
-        thresh_img = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
-        cv2.imshow('after opening', thresh_img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        thresh_img_opened = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
 
-        contours, hierarchy = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        thresh_img_opened = thresh_img_opened.astype(np.uint8)
+        contours, hierarchy = cv2.findContours(thresh_img_opened, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        if display:
+            cv2.imshow('original', image)
+            cv2.imshow('diff map', diff_map)
+            cv2.imshow('diff map smoothed', diff_map_smoothed)
+            cv2.imshow('mask1 ', mask1.astype(np.uint8))
+            cv2.imshow('mask2 ', mask2.astype(np.uint8))
+            cv2.imshow('thresh_img', thresh_img * 255)
+            cv2.imshow('after opening', thresh_img_opened * 255)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
         return contours
 
     @staticmethod
