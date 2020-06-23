@@ -160,19 +160,22 @@ def main():
     normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
     path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/ssim_mse_mixed_best_weights.h5'
 
-    # visualize_diff(data_path, path_to_weights, method='heatmap')
+    # visualize_diff(defect_data_path, path_to_weights, method='lpf')
 
     # anomaly_scores, labels = eval_cae_anomaly_scores(defect_data_path, path_to_weights, first_run=True)
     # save_precision_recall_curve(anomaly_scores, labels)
 
-    predictions, labels = eval_cae_detect_anomalies_by_images(normal_data_path, defect_data_path, path_to_weights,
-                                                              first_run=True)
-    cm = confusion_matrix(labels, predictions)
+    predictions, labels = eval_cae_detect_anomalies_by_crop(defect_data_path, path_to_weights,
+                                                            first_run=True,
+                                                            display=True)
 
-    print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
-    ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
-    plt.show()
-
+    # predictions, labels = eval_cae_detect_anomalies_by_images(normal_data_path, defect_data_path, path_to_weights,
+    #                                                           first_run=True)
+    # cm = confusion_matrix(labels, predictions)
+    #
+    # print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
+    # ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
+    # plt.show()
 
 if __name__ == '__main__':
     main()

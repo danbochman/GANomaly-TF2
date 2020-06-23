@@ -7,6 +7,8 @@ from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape
 from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.models import Sequential
 
+from eval.metric_visualizations import show_lpf, show_heatmap, show_ssim, show_triptych
+
 
 class CAE(tf.keras.Model):
 
@@ -85,69 +87,54 @@ class CAE(tf.keras.Model):
     def visualize_anomalies(self, inputs, method='heatmap', labels=None):
         diff_map, reconstructed = self.diff_map(inputs)
         if method == 'triptych':
-            self.show_triptych(inputs, reconstructed, diff_map, labels)
+            show_triptych(inputs, reconstructed, diff_map, labels)
 
         elif method == 'heatmap':
-            self.show_heatmap(inputs, diff_map, labels)
+            show_heatmap(inputs, diff_map, labels)
+
+        elif method == 'ssim':
+            show_ssim(inputs, reconstructed, labels)
+
+        elif method == 'lpf':
+            show_lpf(inputs, diff_map, labels)
 
     def anomaly_scores(self, inputs, metric_fn):
         reconstructed = self(inputs)
         score = metric_fn(inputs, reconstructed)
         return score
 
-    def detect_anomalies(self, image, min_threshold=50, percentile=99, display=False):
+    def detect_anomalies(self, image, min_threshold=20, percentile=99, display=False):
         diff_map, _ = self.diff_map(image)
         diff_map = diff_map.numpy()[0].astype(np.uint8)
 
-        diff_map_smoothed = cv2.GaussianBlur(diff_map, (5, 5), 0)
-        _, mask1 = cv2.threshold(diff_map_smoothed, min_threshold, 255, cv2.THRESH_BINARY)
+        _, mask1 = cv2.threshold(diff_map, min_threshold, 255, cv2.THRESH_BINARY)
         percentile = np.percentile(diff_map, percentile)
-        _, mask2 = cv2.threshold(diff_map_smoothed, percentile, 255, cv2.THRESH_BINARY)
+        _, mask2 = cv2.threshold(diff_map, percentile, 255, cv2.THRESH_BINARY)
         thresh_img = mask1 * mask2
 
-        kernel = np.ones((3, 3), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         thresh_img_opened = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
+        thresh_img_closed = cv2.morphologyEx(thresh_img_opened, cv2.MORPH_CLOSE, kernel)
 
-        thresh_img_opened = thresh_img_opened.astype(np.uint8)
-        contours, hierarchy = cv2.findContours(thresh_img_opened, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        thresh_img_closed = thresh_img_closed.astype(np.uint8)
+        final_map = np.zeros_like(thresh_img_closed)
+        b = 5  # border from edge
+        final_map[b:-b, b:-b] = thresh_img_closed[b:-b, b:-b]   # get rid of edge differences (many FP)
+        contours, hierarchy = cv2.findContours(final_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         if display:
-            cv2.imshow('original', image)
-            cv2.imshow('diff map', diff_map)
-            cv2.imshow('diff map smoothed', diff_map_smoothed)
-            cv2.imshow('mask1 ', mask1.astype(np.uint8))
-            cv2.imshow('mask2 ', mask2.astype(np.uint8))
-            cv2.imshow('thresh_img', thresh_img * 255)
-            cv2.imshow('after opening', thresh_img_opened * 255)
+            panels = np.zeros((256, 256 * 7, 1))
+            panels[:, :256, :] = image
+            panels[:, 256:512, :] = diff_map
+            panels[:, 512:768, :] = np.expand_dims(mask1.astype(np.uint8), -1)
+            panels[:, 768:1024, :] = np.expand_dims(mask2.astype(np.uint8), -1)
+            panels[:, 1024:1280, :] = np.expand_dims(thresh_img * 255, -1)
+            panels[:, 1280:1536, :] = np.expand_dims(thresh_img_opened * 255, -1)
+            panels[:, 1536:1792, :] = np.expand_dims(final_map * 255, -1)
+
+            cv2.imshow('Image | Diff Map | Mask 1 | Mask 2 | Before Opening | After Opening  | Final Map',
+                       panels.astype(np.uint8))
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
         return contours
-
-    @staticmethod
-    def show_heatmap(inputs, diff_map, labels):
-        for i in range(inputs.shape[0]):
-            comparison = np.zeros((256, 512, 3))
-            comparison[:, :256, :] = inputs[i]
-            overlay = (inputs[i] * 0.7) + (diff_map[i] * 0.3)
-            comparison[:, 256:512:, :] = cv2.applyColorMap(overlay.numpy().astype(np.uint8), cv2.COLORMAP_JET)
-            label = 'Unknown'
-            if labels is not None:
-                label = str(labels[i])
-            cv2.imshow(f'Original   |     Difference Heatmap     |     Label - {label}',
-                       comparison.astype(np.uint8))
-            cv2.waitKey(0)
-
-    @staticmethod
-    def show_triptych(inputs, reconstructed, diff_map, labels=None):
-        for i in range(inputs.shape[0]):
-            triptych = np.zeros((256, 256 * 3, 1))
-            triptych[:, :256, :] = inputs[i]
-            triptych[:, 256:512, :] = reconstructed[i]
-            triptych[:, 512:768, :] = diff_map[i]
-            label = 'Unknown'
-            if labels is not None:
-                label = str(labels[i])
-            cv2.imshow(f'Original   |     Reconstructed    |     Difference      |     Label - {label}',
-                       triptych.astype(np.uint8))
-            cv2.waitKey(0)
