@@ -1,12 +1,22 @@
 import cv2
+import numpy as np
+
+from dataloader.image_generators import test_image_generator
 
 if __name__ == '__main__':
-    img_path = "D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/Cam1/img/PART1_PART1_Cam1_IO__23440-R02-C000_right_000154.png"
-    img = cv2.imread(img_path, 0)
-    # cv2.imshow('Image', img)
-    # cv2.waitKey(0)
-    print(img.shape)
-    upper_bound, lower_bound, interval = 20, 200, 200
-    sliced_img = img[upper_bound:-lower_bound, :interval]
-    cv2.imshow('Image', sliced_img)
-    cv2.waitKey(0)
+    defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
+
+    crop_size = 256
+    test_img_gen = test_image_generator(defect_data_path, batch_size=1, crop_size=crop_size)
+
+    for cogwheel_crop, label in test_img_gen:
+        if label == 1:
+            original_crop = cogwheel_crop[0].astype(np.uint8)
+            # filtered = cv2.bilateralFilter(original_crop, 1, 75, 75)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            crop_clahe = clahe.apply(original_crop)
+            crop_eq = cv2.equalizeHist(original_crop)
+            cv2.imshow('Original', original_crop)
+            # cv2.imshow('Original', filtered)
+            cv2.imshow('Equalized', crop_clahe)
+            cv2.waitKey(0)
