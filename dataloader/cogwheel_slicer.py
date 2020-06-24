@@ -1,7 +1,6 @@
 import cv2
+from dataloader.preprocessing import equalize_and_smooth
 
-RO2_BOUNDS = (20, 200)  # upper bound, lower bound
-RO2_PERIOD = 200
 
 
 def display_slices(img_slices):
@@ -25,7 +24,7 @@ def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
     return False
 
 
-def img_slice_and_label(img, crop_size, bboxes=None):
+def img_slice_and_label(img, crop_size, preprocess=True, bboxes=None):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
@@ -36,7 +35,10 @@ def img_slice_and_label(img, crop_size, bboxes=None):
 
     for vertical in range(0, width - crop_size, v_interval):
         for horizontal in range(0, height - crop_size, h_interval):
-            img_slices.append(img[horizontal:horizontal + crop_size, vertical:vertical + crop_size])
+            crop = img[horizontal:horizontal + crop_size, vertical:vertical + crop_size]
+            if preprocess:
+                crop = equalize_and_smooth(crop)
+            img_slices.append(crop)
             if bboxes is not None:
                 if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
                     labels.append(1)

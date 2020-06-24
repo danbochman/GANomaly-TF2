@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+from scipy import ndimage
+
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Conv2D, Conv2DTranspose
@@ -8,7 +10,7 @@ from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.models import Sequential
 
 from eval.metric_visualizations import show_lpf, show_heatmap, show_ssim, show_triptych
-
+from train.losses import numpy_mse_ssim_mixed, mse_ssim_mixed
 
 class CAE(tf.keras.Model):
 
@@ -57,27 +59,18 @@ class CAE(tf.keras.Model):
                     filters=1, kernel_size=3, strides=1, padding='same'),
             ]
         )
-        self.tb_image_writer = tf.summary.create_file_writer('logs/images')
 
     def infer_inter_tensor_shape(self):
         flatten_layer = self.encoder.layers[-2]
         return flatten_layer.input_shape[1:], flatten_layer.output_shape[1:][0]
 
     def call(self, inputs):
+        # self._in = inputs
         encoded = self.encoder(inputs)
         decoded = self.decoder(encoded)
-        if K.learning_phase():
-            self.tb_image_display(inputs, decoded)
+        # self._out = decoded
         return decoded
 
-    def tb_image_display(self, inputs, decoded):
-        with self.tb_image_writer.as_default():
-            inputs = tf.cast(inputs, tf.uint8)
-            decoded = tf.cast(decoded, tf.uint8)
-            summary_step = tf.summary.experimental.get_step()
-            tf.summary.image("Original Images", inputs, max_outputs=4, step=summary_step)
-            tf.summary.image("Reconstructed Images", decoded, max_outputs=4, step=summary_step)
-            tf.summary.experimental.set_step(summary_step + 1)
 
     def diff_map(self, inputs):
         reconstructed = self(inputs)
@@ -103,38 +96,45 @@ class CAE(tf.keras.Model):
         score = metric_fn(inputs, reconstructed)
         return score
 
-    def detect_anomalies(self, image, min_threshold=20, percentile=99, display=False):
+    def detect_anomalies(self, image, min_threshold=20, percentile=99, mean_loss=175, label=None, debug=False):
         diff_map, _ = self.diff_map(image)
         diff_map = diff_map.numpy()[0].astype(np.uint8)
+        reconstruction_loss = self.anomaly_scores(tf.convert_to_tensor(image, dtype=tf.float32), mse_ssim_mixed)
 
-        _, mask1 = cv2.threshold(diff_map, min_threshold, 255, cv2.THRESH_BINARY)
-        percentile = np.percentile(diff_map, percentile)
-        _, mask2 = cv2.threshold(diff_map, percentile, 255, cv2.THRESH_BINARY)
-        thresh_img = mask1 * mask2
+        class_error = False
+        if debug and label:
+            err_cond_1 = (reconstruction_loss > mean_loss) and (label == 0)
+            err_cond_2 = (reconstruction_loss <= mean_loss) and (label == 1)
+            class_error = err_cond_1 or err_cond_2
 
-        kernel = np.ones((5, 5), np.uint8)
-        thresh_img_opened = cv2.morphologyEx(thresh_img, cv2.MORPH_OPEN, kernel)
-        thresh_img_closed = cv2.morphologyEx(thresh_img_opened, cv2.MORPH_CLOSE, kernel)
+        if reconstruction_loss >= mean_loss:
+            # blurred = cv2.medianBlur(diff_map, 3)
+            grey_opening = ndimage.grey_opening(diff_map[:, :, 0], (5, 5), mode='reflect')
 
-        thresh_img_closed = thresh_img_closed.astype(np.uint8)
-        final_map = np.zeros_like(thresh_img_closed)
-        b = 5  # border from edge
-        final_map[b:-b, b:-b] = thresh_img_closed[b:-b, b:-b]   # get rid of edge differences (many FP)
-        contours, hierarchy = cv2.findContours(final_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            _, mask1 = cv2.threshold(grey_opening, min_threshold, 255, cv2.THRESH_BINARY)
+            percentile = np.percentile(grey_opening, percentile)
+            _, mask2 = cv2.threshold(grey_opening, percentile, 255, cv2.THRESH_BINARY)
+            thresh_img = mask1 * mask2
 
-        if display:
-            panels = np.zeros((256, 256 * 7, 1))
-            panels[:, :256, :] = image
-            panels[:, 256:512, :] = diff_map
-            panels[:, 512:768, :] = np.expand_dims(mask1.astype(np.uint8), -1)
-            panels[:, 768:1024, :] = np.expand_dims(mask2.astype(np.uint8), -1)
-            panels[:, 1024:1280, :] = np.expand_dims(thresh_img * 255, -1)
-            panels[:, 1280:1536, :] = np.expand_dims(thresh_img_opened * 255, -1)
-            panels[:, 1536:1792, :] = np.expand_dims(final_map * 255, -1)
+            final_map = np.zeros_like(thresh_img)
+            b = 15  # border from edge
+            final_map[b:-b, b:-b] = thresh_img[b:-b, b:-b]   # get rid of edge differences (many FP)
+            contours, hierarchy = cv2.findContours(final_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-            cv2.imshow('Image | Diff Map | Mask 1 | Mask 2 | Before Opening | After Opening  | Final Map',
-                       panels.astype(np.uint8))
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            if debug:
+                print(reconstruction_loss)
+                panels = np.zeros((256, 256 * 5, 4))
+                panels[:, :256, :] = image
+                panels[:, 256:512, :] = diff_map
+                panels[:, 512:768, :] = np.expand_dims(grey_opening, -1)
+                panels[:, 768:1024, :] = np.expand_dims(thresh_img * 255, -1)
 
-        return contours
+                cv2.imshow('Image | Diff Map | Grey Open | Thresh | ',
+                           panels.astype(np.uint8))
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+
+            return contours
+
+        else:
+            return []

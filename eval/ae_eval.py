@@ -48,10 +48,15 @@ def eval_cae_anomaly_scores(path_to_data, path_to_weights, batch_size=64, first_
     return anomaly_scores_total, labels_total
 
 
-def eval_cae_detect_anomalies_by_crop(path_to_data, path_to_weights, display=False, first_run=True):
+def eval_cae_detect_anomalies_by_crop(path_to_normal_data, path_to_defects_data, path_to_weights, mean_training_loss,
+                                      preprocess=True, debug=False, first_run=True):
     if first_run:
         crop_size = 256
-        test_img_gen = test_image_generator(path_to_data, batch_size=1, crop_size=crop_size)
+        test_img_gen = test_image_generator(path_to_defects_data, batch_size=1, crop_size=crop_size,
+                                            preprocess=preprocess)
+        normal_img_gen = train_image_generator(path_to_normal_data, batch_size=1, crop_size=crop_size,
+                                               preprocess=preprocess,
+                                               repeat=False)
 
         cae = CAE(input_shape=(crop_size, crop_size, 1))
 
@@ -63,11 +68,25 @@ def eval_cae_detect_anomalies_by_crop(path_to_data, path_to_weights, display=Fal
         for cogwheel_crop, label in tqdm(test_img_gen):
             labels.extend(label)
             crop_for_display = cogwheel_crop[0].astype(np.uint8)
-            bboxes = cae.detect_anomalies(cogwheel_crop, display=display)
+            bboxes = cae.detect_anomalies(cogwheel_crop, mean_loss=mean_training_loss, label=label, debug=debug)
             pred = (len(bboxes) > 0)
             predictions.append(pred)
             if pred:
-                if display:
+                if debug:
+                    cv2.drawContours(crop_for_display, bboxes, -1, (255, 0, 0), 3)
+                    cv2.imshow(f'GT Label - {str(label)}', crop_for_display)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+
+        for cogwheel_crop, _ in tqdm(normal_img_gen):
+            label = 0
+            labels.append(label)
+            crop_for_display = cogwheel_crop[0].astype(np.uint8)
+            bboxes = cae.detect_anomalies(cogwheel_crop, mean_loss=mean_training_loss, label=label, debug=debug)
+            pred = (len(bboxes) > 0)
+            predictions.append(pred)
+            if pred:
+                if debug:
                     cv2.drawContours(crop_for_display, bboxes, -1, (255, 0, 0), 3)
                     cv2.imshow(f'GT Label - {str(label)}', crop_for_display)
                     cv2.waitKey(0)
@@ -86,7 +105,7 @@ def eval_cae_detect_anomalies_by_crop(path_to_data, path_to_weights, display=Fal
 
 
 def eval_cae_detect_anomalies_by_images(path_to_normal_data, path_to_defect_data, path_to_weights,
-                                        display=False,
+                                        debug=False,
                                         first_run=True):
     if first_run:
         crop_size = 256
@@ -105,7 +124,7 @@ def eval_cae_detect_anomalies_by_images(path_to_normal_data, path_to_defect_data
             pred = 0
             for crop in cogwheel_crops:
                 crop = np.expand_dims(crop, axis=0)
-                bboxes = cae.detect_anomalies(crop, display=display)
+                bboxes = cae.detect_anomalies(crop, debug=debug)
                 if len(bboxes) > 0:
                     pred = 1
                     break
@@ -116,7 +135,7 @@ def eval_cae_detect_anomalies_by_images(path_to_normal_data, path_to_defect_data
             pred = 0
             for crop in cogwheel_crops:
                 crop = np.expand_dims(crop, axis=0)
-                bboxes = cae.detect_anomalies(crop, display=display)
+                bboxes = cae.detect_anomalies(crop, debug=debug)
                 if len(bboxes) > 0:
                     pred = 1
                     break
@@ -158,24 +177,29 @@ def visualize_diff(path_to_images, path_to_weights, method='heatmap'):
 def main():
     defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
     normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
-    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/ssim_mse_mixed_best_weights.h5'
+    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/preprocessed_best_weights.h5'
 
     # visualize_diff(defect_data_path, path_to_weights, method='lpf')
 
-    # anomaly_scores, labels = eval_cae_anomaly_scores(defect_data_path, path_to_weights, first_run=True)
-    # save_precision_recall_curve(anomaly_scores, labels)
+    anomaly_scores, labels = eval_cae_anomaly_scores(normal_data_path, defect_data_path, path_to_weights, first_run=True)
+    save_precision_recall_curve(anomaly_scores, labels)
 
-    predictions, labels = eval_cae_detect_anomalies_by_crop(defect_data_path, path_to_weights,
+    predictions, labels = eval_cae_detect_anomalies_by_crop(normal_data_path,
+                                                            defect_data_path,
+                                                            path_to_weights,
+                                                            mean_training_loss=175,
+                                                            preprocess=True,
                                                             first_run=True,
-                                                            display=True)
+                                                            debug=False)
 
     # predictions, labels = eval_cae_detect_anomalies_by_images(normal_data_path, defect_data_path, path_to_weights,
     #                                                           first_run=True)
-    # cm = confusion_matrix(labels, predictions)
-    #
-    # print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
-    # ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
-    # plt.show()
+
+    cm = confusion_matrix(labels, predictions)
+    print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
+    ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
+    plt.show()
+
 
 if __name__ == '__main__':
     main()
