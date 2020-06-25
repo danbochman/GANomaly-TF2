@@ -10,7 +10,7 @@ from tensorflow.keras.layers import LeakyReLU, BatchNormalization
 from tensorflow.keras.models import Sequential
 
 from eval.metric_visualizations import show_lpf, show_heatmap, show_ssim, show_triptych
-from train.losses import numpy_mse_ssim_mixed, mse_ssim_mixed
+from train.losses import mse_ssim_mixed
 
 class CAE(tf.keras.Model):
 
@@ -109,7 +109,7 @@ class CAE(tf.keras.Model):
 
         if reconstruction_loss >= mean_loss:
             # blurred = cv2.medianBlur(diff_map, 3)
-            grey_opening = ndimage.grey_opening(diff_map[:, :, 0], (5, 5), mode='reflect')
+            grey_opening = ndimage.grey_opening(diff_map[:, :, 0], (3, 3), mode='nearest')
 
             _, mask1 = cv2.threshold(grey_opening, min_threshold, 255, cv2.THRESH_BINARY)
             percentile = np.percentile(grey_opening, percentile)
@@ -117,13 +117,13 @@ class CAE(tf.keras.Model):
             thresh_img = mask1 * mask2
 
             final_map = np.zeros_like(thresh_img)
-            b = 15  # border from edge
+            b = 20  # border from edge
             final_map[b:-b, b:-b] = thresh_img[b:-b, b:-b]   # get rid of edge differences (many FP)
             contours, hierarchy = cv2.findContours(final_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
             if debug:
                 print(reconstruction_loss)
-                panels = np.zeros((256, 256 * 5, 4))
+                panels = np.zeros((256, 256 * 4, 1))
                 panels[:, :256, :] = image
                 panels[:, 256:512, :] = diff_map
                 panels[:, 512:768, :] = np.expand_dims(grey_opening, -1)

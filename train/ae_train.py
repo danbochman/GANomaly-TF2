@@ -36,14 +36,15 @@ def main():
     crop_size = 256
     train_img_gen, val_img_gen = train_val_image_generator("/media/jpowell/hdd/Data/AIS/RO2_OK_images/",
                                                            crop_size=crop_size,
-                                                           batch_size=64,
-                                                           random_state=0)
+                                                           batch_size=48,
+                                                           random_state=1,
+                                                           preprocess=False)
 
     cae = CAE(input_shape=(crop_size, crop_size, 1))
     cae.compile(optimizer='adam',
                 loss=mse_ssim_mixed)
 
-    path_to_weights = 'val_best_weights.h5'
+    path_to_weights = 'no_preprocess_best_weights.h5'
     callbacks = [XTensorBoard('logs'),
                  ModelCheckpoint(path_to_weights, monitor='val_loss', save_best_only=True),
                  ReduceLROnPlateau(monitor='val_loss')]

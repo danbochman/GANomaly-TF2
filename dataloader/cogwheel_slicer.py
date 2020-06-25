@@ -24,7 +24,7 @@ def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
     return False
 
 
-def img_slice_and_label(img, crop_size, preprocess=True, bboxes=None):
+def img_slice_and_label(img, crop_size, preprocess=False, bboxes=None):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []

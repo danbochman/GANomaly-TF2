@@ -1,5 +1,5 @@
 import glob
-from random import shuffle, seed
+from random import shuffle, seed, sample
 
 import cv2
 import numpy as np
@@ -22,11 +22,13 @@ def crop_generator(img_list, batch_size=64, crop_size=256, preprocess=True, repe
 
 
 def train_val_image_generator(folder_path, batch_size=64, crop_size=256, ext="png",
-                              val_ratio=0.2, preprocess=True, repeat=True, random_state=0):
+                              val_ratio=0.2, preprocess=False, repeat=True, random_state=0, sample_frac=None):
     seed(random_state)
     img_list = [img for img in glob.glob(folder_path + "**/*." + ext, recursive=True)]
     shuffle(img_list)
     num_images = len(img_list)
+    if sample_frac is not None:
+        img_list = sample(img_list, int(num_images * sample_frac))
     train_val_split = int(num_images * (1 - val_ratio))
     train_imgs = img_list[:train_val_split]
     val_imgs = img_list[train_val_split:]
@@ -35,7 +37,7 @@ def train_val_image_generator(folder_path, batch_size=64, crop_size=256, ext="pn
     return train_generator, val_generator
 
 
-def test_image_generator(folder_path, batch_size=64, crop_size=256, ext="png", preprocess=True):
+def test_image_generator(folder_path, batch_size=64, crop_size=256, ext="png", preprocess=False):
     img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
     ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
     # ann_list.pop(0)  # drop meta.json
