@@ -185,7 +185,7 @@ def find_median_threshold(path_to_images, path_to_weights, metric_fn, sample_fra
 def main():
     defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
     normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
-    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/no_preprocess_best_weights.h5'
+    path_to_weights = '/train/weights/no_preprocess_best_weights.h5'
 
     # median_threshold = find_median_threshold(normal_data_path, path_to_weights, mse_ssim_mixed,
     #                                          sample_frac=0.1)

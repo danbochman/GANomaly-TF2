@@ -16,20 +16,14 @@ if len(physical_devices) > 0:
 class XTensorBoard(TensorBoard):
     def __init__(self, log_dir, **kwargs):  # add other arguments to __init__ if you need
         super().__init__(log_dir=log_dir, **kwargs)
-        self._tb_image_writer = tf.summary.create_file_writer(log_dir + '/images')
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         logs.update({'lr': K.eval(self.model.optimizer.lr)})
-        # self.write_images_to_tb(epoch)
         super().on_epoch_end(epoch, logs)
 
-    def write_images_to_tb(self, epoch):
-        original_imgs = self.model._in
-        decoded = self.model._out
-        with self._tb_image_writer.as_default():
-            tf.summary.image("Original Images", original_imgs, max_outputs=4, step=epoch)
-            tf.summary.image("Reconstructed Images", decoded, max_outputs=4, step=epoch)
+    def on_train_batch_end(self, batch, logs=None):
+        self.model.training_step += 1
 
 
 def main():
@@ -40,11 +34,11 @@ def main():
                                                            random_state=1,
                                                            preprocess=False)
 
-    cae = CAE(input_shape=(crop_size, crop_size, 1))
+    cae = CAE(input_shape=(crop_size, crop_size, 1), latent_dim=256)
     cae.compile(optimizer='adam',
                 loss=mse_ssim_mixed)
 
-    path_to_weights = 'no_preprocess_best_weights.h5'
+    path_to_weights = 'weights/256d_best_weights.h5'
     callbacks = [XTensorBoard('logs'),
                  ModelCheckpoint(path_to_weights, monitor='val_loss', save_best_only=True),
                  ReduceLROnPlateau(monitor='val_loss')]
