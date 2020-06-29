@@ -3,13 +3,14 @@ from random import shuffle, seed, sample
 
 import cv2
 import numpy as np
+import tqdm
 
 from dataloader.annotation_utils import load_annotation_file, annotation_to_bboxes_ltwh
 from dataloader.cogwheel_slicer import img_slice_and_label
 from dataloader.preprocessing import stack_and_expand
 
 
-def crop_generator(img_list, batch_size=64, crop_size=256, preprocess=True, repeat=True):
+def crop_generator(img_list, batch_size=64, crop_size=256, preprocess=False, repeat=True):
     repeats = 2 ** 32 if repeat else 1
     for i in range(repeats):
         for img_path in img_list:
@@ -21,7 +22,7 @@ def crop_generator(img_list, batch_size=64, crop_size=256, preprocess=True, repe
                 yield img_batch, img_batch
 
 
-def train_val_image_generator(folder_path, batch_size=64, crop_size=256, ext="png",
+def train_val_image_generator(folder_path, batch_size=48, crop_size=256, ext="png",
                               val_ratio=0.2, preprocess=False, repeat=True, random_state=0, sample_frac=None):
     seed(random_state)
     img_list = [img for img in glob.glob(folder_path + "**/*." + ext, recursive=True)]
@@ -32,8 +33,10 @@ def train_val_image_generator(folder_path, batch_size=64, crop_size=256, ext="pn
     train_val_split = int(num_images * (1 - val_ratio))
     train_imgs = img_list[:train_val_split]
     val_imgs = img_list[train_val_split:]
-    train_generator = crop_generator(train_imgs, batch_size=batch_size, crop_size=crop_size, preprocess=preprocess, repeat=repeat)
-    val_generator = crop_generator(val_imgs, batch_size=batch_size, crop_size=crop_size, preprocess=preprocess, repeat=repeat)
+    train_generator = crop_generator(train_imgs, batch_size=batch_size, crop_size=crop_size, preprocess=preprocess,
+                                     repeat=repeat)
+    val_generator = crop_generator(val_imgs, batch_size=batch_size, crop_size=crop_size, preprocess=preprocess,
+                                   repeat=repeat)
     return train_generator, val_generator
 
 
@@ -52,6 +55,15 @@ def test_image_generator(folder_path, batch_size=64, crop_size=256, ext="png", p
             img_batch = img_slices[i:i + batch_size]
             label_batch = labels[i:i + batch_size]
             yield img_batch, label_batch
+
+
+# def estimate_dataset_mean_var(data_path):
+#     img_gen, _ = train_val_image_generator(data_path, val_ratio=0.0, repeat=False)
+#     cumsum = 0
+#     counter = 0
+#     for cogwheel_crops, _ in tqdm(img_gen):
+
+
 
 
 if __name__ == '__main__':
