@@ -2,7 +2,7 @@ import os
 
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
-
+from tensorflow.keras.metrics import Precision, Recall
 from dataloader.image_generators import test_image_generator
 from models.autoencoders import CAE
 from models.tuners import FilterSearcher
@@ -46,7 +46,8 @@ def main():
     print('Initializing tuner model...')
     tuner_model = FilterSearcher(input_shape, cae)
     tuner_model.compile(optimizer='adam',
-                        loss=weighted_binary_crossentropy_loss)
+                        loss=weighted_binary_crossentropy_loss,
+                        metrics=[Precision(), Recall()])
 
     print('Training...')
     history = tuner_model.fit(test_img_gen,

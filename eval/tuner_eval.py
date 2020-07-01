@@ -35,7 +35,7 @@ def main():
     print('Initializing autoencoder model...')
     input_shape = (crop_size, crop_size, 1)
     cae = CAE(input_shape=input_shape, latent_dim=latent_dim)
-    path_to_ae_model = 'RO2_AC_128x_64d_best_model.h5'
+    path_to_ae_model = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/RO2_AC_128x_64d_best_model.h5'
     if os.path.exists(path_to_ae_model):
         print('Loading model from checkpoint....')
         cae.load_weights(path_to_ae_model)
@@ -46,7 +46,7 @@ def main():
 
     print('Initializing tuned model...')
     tuner_model = FilterSearcher(input_shape, cae)
-    path_to_tuner_model = 'RO2_Tuner.h5'
+    path_to_tuner_model = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/RO2_Tuner.h5'
     if os.path.exists(path_to_ae_model):
         print('Loading tuner from checkpoint....')
         tuner_model.load_weights(path_to_tuner_model)
