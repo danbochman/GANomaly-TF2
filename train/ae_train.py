@@ -5,7 +5,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 
 from dataloader.image_generators import train_val_image_generator
 from models.autoencoders import CAE
-from train.losses import mse_ssim_mixed
+from train.losses import mse_dssim_mixed_loss
 from train.tensorboard_utils import XTensorBoard
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -14,10 +14,14 @@ if len(physical_devices) > 0:
 
 
 def main():
-    crop_size = 128
+    crop_size = 256
     latent_dim = 256
     batch_size = 128
-    train_img_gen, val_img_gen = train_val_image_generator("/media/jpowell/hdd/Data/AIS/RO2_OK_images/",
+
+    # image_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
+    image_data_path = "/media/jpowell/hdd/Data/AIS/8C3W_per_Camera/"
+
+    train_img_gen, val_img_gen = train_val_image_generator(image_data_path,
                                                            crop_size=crop_size,
                                                            batch_size=batch_size,
                                                            random_state=2,
@@ -25,9 +29,9 @@ def main():
 
     print('Initializing model...')
     cae = CAE(input_shape=(crop_size, crop_size, 1), latent_dim=latent_dim)
-    cae.compile(optimizer='adam', loss=mse_ssim_mixed)
+    cae.compile(optimizer='adam', loss=mse_dssim_mixed_loss)
 
-    path_to_model = '128x_256d_best_model.h5'
+    path_to_model = '8C3W_128x_256d_best_model.h5'
     if os.path.exists(path_to_model):
         print('Loading model from checkpoint....')
         cae.load_weights(path_to_model)
@@ -37,6 +41,7 @@ def main():
                                  verbose=1),
                  ReduceLROnPlateau(monitor='val_loss')]
 
+    print('Training...')
     history = cae.fit(train_img_gen,
                       callbacks=callbacks,
                       steps_per_epoch=100,

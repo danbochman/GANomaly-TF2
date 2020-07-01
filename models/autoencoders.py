@@ -8,7 +8,6 @@ from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape
 from tensorflow.keras.models import Sequential
 
 from eval.metric_visualizations import show_heatmap, show_ssim, show_triptych
-from train.losses import mse_dssim_mixed
 
 
 class CAE(tf.keras.Model):
@@ -89,10 +88,10 @@ class CAE(tf.keras.Model):
         score = metric_fn(inputs, reconstructed)
         return score
 
-    def detect_anomalies(self, image, min_threshold=25, percentile=99.5, min_area=10, label=None, debug=False, crop_size=128):
+    def detect_anomalies(self, image, min_threshold=25, percentile=99.5, min_area=10, label=None, debug=False,
+                         crop_size=128):
         diff_map, _ = self.diff_map(image)
         diff_map = diff_map.numpy()[0].astype(np.uint8)
-
 
         grey_opening = ndimage.grey_opening(diff_map[:, :, 0], (3, 3), mode='nearest')
         grey_opening = cv2.medianBlur(grey_opening, 3)
@@ -114,15 +113,15 @@ class CAE(tf.keras.Model):
 
         contours_area = [cv2.contourArea(contour) for contour in contours]
         # filter by contour area
-        contours = list(filter(lambda x: x >= min_area, contours_area))
+        contours = [contour for contour, area in zip(contours, contours_area) if area >= min_area]
 
         if debug and label == 1:
             print('Contours area: ', contours_area)
             panels = np.zeros((crop_size, crop_size * 4, 1))
             panels[:, :crop_size, :] = image
-            panels[:, crop_size:crop_size*2, :] = diff_map
-            panels[:, crop_size*2:crop_size*3, :] = np.expand_dims(grey_opening, -1)
-            panels[:, crop_size*3:crop_size*4, :] = np.expand_dims(thresh_img * 255, -1)
+            panels[:, crop_size:crop_size * 2, :] = diff_map
+            panels[:, crop_size * 2:crop_size * 3, :] = np.expand_dims(grey_opening, -1)
+            panels[:, crop_size * 3:crop_size * 4, :] = np.expand_dims(thresh_img * 255, -1)
 
             cv2.imshow('Image | Diff Map | Grey Open | Thresh | ',
                        panels.astype(np.uint8))
@@ -130,7 +129,6 @@ class CAE(tf.keras.Model):
             cv2.destroyAllWindows()
 
         return contours
-
 
 
 class CVAE(CAE):

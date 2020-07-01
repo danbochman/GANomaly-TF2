@@ -123,12 +123,14 @@ def find_median_threshold(path_to_images, path_to_weights, metric_fn, crop_size=
 
 
 def main():
-    defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
-    normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
-    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/128x_256d_best_model.h5'
+    defect_data_path = "/media/jpowell/hdd/Data/AIS/8C3W_per_Camera/"
+    # defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
+    # normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
+    # path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/128x_256d_best_model.h5'
+    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/8C3W_128x_256d_best_model.h5'
 
     nn_params = {
-        'crop_size': 128,
+        'crop_size': 256,  # 128 for RO2, 256 for 8C3W
         'latent_dim': 256,
         'batch_size': 128
     }

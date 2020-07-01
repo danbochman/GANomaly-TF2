@@ -26,7 +26,7 @@ def mse_dssim_mixed(original_img, reconstructed_img):
     return mse - (gamma * dssim_score)
 
 
-def mse_ssim_mixed_loss(original_img, reconstructed_img):
+def mse_dssim_mixed_loss(original_img, reconstructed_img):
     mse_dssim = K.mean(mse_dssim_mixed(original_img, reconstructed_img), axis=0)
     return mse_dssim
 
