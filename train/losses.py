@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 
@@ -31,18 +30,9 @@ def mse_dssim_mixed_loss(original_img, reconstructed_img):
     return mse_dssim
 
 
-def log_normal_pdf(sample, mean, logvar, raxis=1):
-    log2pi = tf.math.log(2. * np.pi)
-    return tf.reduce_sum(
-        -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi), axis=raxis)
-
-
-def compute_loss(model, x):
-    mean, logvar = model.encode(x)
-    z = model.reparameterize(mean, logvar)
-    x_logit = model.decode(z)
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
-    logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    logpz = log_normal_pdf(z, 0., 0.)
-    logqz_x = log_normal_pdf(z, mean, logvar)
-    return -tf.reduce_mean(logpx_z + logpz - logqz_x)
+def weighted_binary_crossentropy_loss(y_true, y_pred):
+    eps = 1e-7
+    anomaly_weight = 0.99
+    wce = anomaly_weight * y_true * tf.math.log(eps + y_pred) + \
+          (1.0 - anomaly_weight) * (1.0 - y_true) * tf.math.log(eps + 1.0 - y_pred)
+    return -tf.reduce_mean(wce)

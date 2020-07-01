@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from scipy import ndimage
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose
-from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape
+from tensorflow.keras.layers import Conv2D, UpSampling2D
+from tensorflow.keras.layers import InputLayer, Flatten, Dense, Reshape, ReLU
 from tensorflow.keras.models import Sequential
 
 from eval.metric_visualizations import show_heatmap, show_ssim, show_triptych
@@ -12,7 +12,7 @@ from eval.metric_visualizations import show_heatmap, show_ssim, show_triptych
 
 class CAE(tf.keras.Model):
 
-    def __init__(self, input_shape, latent_dim=128, log_dir='logs'):
+    def __init__(self, input_shape, latent_dim=128, log_dir='./autoencoder/logs/'):
         super(CAE, self).__init__()
         self.training_step = 0
         self._tb_image_writer = tf.summary.create_file_writer(log_dir + '/images')
@@ -21,9 +21,15 @@ class CAE(tf.keras.Model):
         self.encoder = Sequential(
             [
                 InputLayer(input_shape=self._input_shape),
-                Conv2D(filters=32, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
-                Conv2D(filters=64, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
-                Conv2D(filters=64, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
+                Conv2D(filters=32, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                Conv2D(filters=32, kernel_size=2, strides=(2, 2), padding='valid'),
+                Conv2D(filters=64, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                Conv2D(filters=64, kernel_size=2, strides=(2, 2), padding='valid'),
+                Conv2D(filters=64, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                Conv2D(filters=64, kernel_size=2, strides=(2, 2), padding='valid'),
                 Flatten(),
                 Dense(latent_dim),
             ]
@@ -36,12 +42,16 @@ class CAE(tf.keras.Model):
                 InputLayer(input_shape=(latent_dim,)),
                 Dense(units=self._inter_shape[1], activation='relu'),
                 Reshape(target_shape=self._inter_shape[0]),
-                Conv2DTranspose(filters=64, kernel_size=3, strides=2, padding='same', activation='relu'),
-                Conv2DTranspose(filters=64, kernel_size=3, strides=2, padding='same', activation='relu'),
-                Conv2DTranspose(filters=32, kernel_size=3, strides=2, padding='same', activation='relu'),
-                # No activation
-                Conv2DTranspose(
-                    filters=1, kernel_size=3, strides=1, padding='same'),
+                UpSampling2D(),
+                Conv2D(filters=64, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                UpSampling2D(),
+                Conv2D(filters=64, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                UpSampling2D(),
+                Conv2D(filters=32, kernel_size=3, strides=(1, 1), padding='same'),
+                ReLU(),
+                Conv2D(filters=1, kernel_size=3, strides=(1, 1), padding='same', activation='relu')
             ]
         )
 
@@ -66,10 +76,9 @@ class CAE(tf.keras.Model):
             tf.summary.image("Original Images", inputs, max_outputs=4, step=self.training_step)
             tf.summary.image("Reconstructed Images", decoded, max_outputs=4, step=self.training_step)
 
-    @tf.function
     def diff_map(self, inputs):
         reconstructed = self(inputs, training=False)
-        diff_map = K.abs(tf.cast(reconstructed, tf.float64) - inputs)
+        diff_map = K.abs(tf.cast(reconstructed, tf.float64) - tf.cast(inputs, tf.float64))
         return diff_map, reconstructed
 
     def visualize_anomalies(self, inputs, method='heatmap', crop_size=128, labels=None):
@@ -129,53 +138,3 @@ class CAE(tf.keras.Model):
             cv2.destroyAllWindows()
 
         return contours
-
-
-class CVAE(CAE):
-
-    def __init__(self, input_shape, latent_dim=128, log_dir='logs'):
-        super(CVAE, self).__init__(input_shape, latent_dim=latent_dim, log_dir=log_dir)
-        self.encoder = Sequential(
-            [
-                InputLayer(input_shape=self._input_shape),
-                Conv2D(filters=32, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
-                Conv2D(filters=64, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
-                Conv2D(filters=64, kernel_size=3, strides=(2, 2), padding='same', activation='relu'),
-                Flatten(),
-                Dense(latent_dim + latent_dim),
-            ]
-        )
-
-        self._inter_shape = self.infer_inter_tensor_shape()
-
-        self.decoder = tf.keras.Sequential(
-            [
-                InputLayer(input_shape=(latent_dim,)),
-                Dense(units=self._inter_shape[1], activation='relu'),
-                Reshape(target_shape=self._inter_shape[0]),
-                Conv2DTranspose(filters=64, kernel_size=3, strides=2, padding='same', activation='relu'),
-                Conv2DTranspose(filters=64, kernel_size=3, strides=2, padding='same', activation='relu'),
-                Conv2DTranspose(filters=32, kernel_size=3, strides=2, padding='same', activation='relu'),
-                # No activation
-                Conv2DTranspose(
-                    filters=1, kernel_size=3, strides=1, padding='same'),
-            ]
-        )
-
-    @tf.function
-    def sample(self, eps=None):
-        if eps is None:
-            eps = tf.random.normal(shape=(100, self.latent_dim))
-        return self.decode(eps)
-
-    def encode(self, x):
-        mean, logvar = tf.split(self.encoder(x), num_or_size_splits=2, axis=1)
-        return mean, logvar
-
-    def reparameterize(self, mean, logvar):
-        eps = tf.random.normal(shape=mean.shape)
-        return eps * tf.exp(logvar * .5) + mean
-
-    def decode(self, z):
-        logits = self.decoder(z)
-        return logits

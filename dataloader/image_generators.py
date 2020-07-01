@@ -41,8 +41,8 @@ def train_val_image_generator(folder_path, batch_size=128, crop_size=128, ext="p
     img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
     ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
     normal_img_list, defect_img_list = separate_images_by_label(img_list, ann_list)
-    normal_imgs, _ = normal_img_list  # no need for annotations
-    shuffle(normal_imgs)
+    normal_imgs, _ = list(zip(*normal_img_list))  # no need for annotations
+    shuffle(list(normal_imgs))
     num_images = len(normal_imgs)
     if sample_frac is not None:
         normal_imgs = sample(normal_imgs, int(num_images * sample_frac))
@@ -56,24 +56,25 @@ def train_val_image_generator(folder_path, batch_size=128, crop_size=128, ext="p
     return train_generator, val_generator
 
 
-def test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", preprocess=False):
+def test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", preprocess=False, repeat=False):
     img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
     ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
     normal_img_list, defect_img_list = separate_images_by_label(img_list, ann_list)
     # defect_imgs, defect_ann = list(zip(*defect_img_list))
 
-    # ann_list.pop(0)  # drop meta.json
-    for img_path, ann_path in defect_img_list:
-        img = cv2.imread(img_path, 0)
-        ann = load_annotation_file(ann_path)
-        bboxes = annotation_to_bboxes_ltwh(ann)
-        img_slices, labels = img_slice_and_label(img, crop_size, bboxes=bboxes, preprocess=preprocess)
-        img_slices = stack_and_expand(img_slices)
-        labels = np.array(labels)
-        for i in range(0, img_slices.shape[0], batch_size):
-            img_batch = img_slices[i:i + batch_size]
-            label_batch = labels[i:i + batch_size]
-            yield img_batch, label_batch
+    repeats = 2 ** 32 if repeat else 1
+    for i in range(repeats):
+        for img_path, ann_path in defect_img_list:
+            img = cv2.imread(img_path, 0)
+            ann = load_annotation_file(ann_path)
+            bboxes = annotation_to_bboxes_ltwh(ann)
+            img_slices, labels = img_slice_and_label(img, crop_size, bboxes=bboxes, preprocess=preprocess)
+            img_slices = stack_and_expand(img_slices)
+            labels = np.array(labels)
+            for i in range(0, img_slices.shape[0], batch_size):
+                img_batch = img_slices[i:i + batch_size]
+                label_batch = labels[i:i + batch_size]
+                yield img_batch, label_batch
 
 
 if __name__ == '__main__':

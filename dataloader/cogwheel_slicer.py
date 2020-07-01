@@ -41,9 +41,9 @@ def img_slice_and_label(img, crop_size, preprocess=False, bboxes=None):
             img_slices.append(crop)
             if bboxes is not None:
                 if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
-                    labels.append(1)
+                    labels.append(1.0)
                 else:
-                    labels.append(0)
+                    labels.append(0.0)
 
     return img_slices, labels
 
