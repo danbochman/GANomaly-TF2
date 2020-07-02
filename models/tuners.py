@@ -14,19 +14,22 @@ class FilterSearcher(tf.keras.Model):
         self._tuner = Sequential(
             [
                 InputLayer(input_shape=self._input_shape),
-                Conv2D(filters=8, kernel_size=3, strides=(1, 1), padding='same'),
+                Conv2D(filters=2, kernel_size=3, strides=(1, 1), padding='same'),
                 BatchNormalization(),
                 ReLU(),
                 AveragePooling2D(),
-                Conv2D(filters=8, kernel_size=3, strides=(1, 1), padding='same'),
+                Conv2D(filters=2, kernel_size=3, strides=(1, 1), padding='same'),
                 BatchNormalization(),
                 ReLU(),
                 AveragePooling2D(),
+                Conv2D(filters=2, kernel_size=3, strides=(1, 1), padding='same'),
+                BatchNormalization(),
+                ReLU(),
                 Flatten(),
                 Dense(32),
                 BatchNormalization(),
                 ReLU(),
-                Dropout(0.25),
+                Dropout(0.5),
                 Dense(1, activation='sigmoid'),
 
             ]

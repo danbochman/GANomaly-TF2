@@ -1,6 +1,8 @@
 import os
-
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, classification_report
 from eval.eval_utils import save_precision_recall_curve
 from tqdm import tqdm
@@ -12,6 +14,7 @@ physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+
 def eval_tuner(tuner, test_img_gen):
     labels = []
     anomaly_scores = []
@@ -21,6 +24,7 @@ def eval_tuner(tuner, test_img_gen):
         anomaly_scores.extend(anomaly_score)
 
     return anomaly_scores, labels
+
 
 def main():
     crop_size = 128
@@ -56,9 +60,15 @@ def main():
         print('tuner loaded, frozen and compiled')
 
     anomaly_scores, labels = eval_tuner(tuner_model, test_img_gen)
-    save_precision_recall_curve(anomaly_scores, labels)
+    precision, recall, thresholds = save_precision_recall_curve(np.array(anomaly_scores), labels)
 
 
+    threshold = 0.5
+    predictions = (np.array(anomaly_scores) > threshold).astype(np.int)
+    cm = confusion_matrix(labels, predictions)
+    print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
+    ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
+    plt.show()
 
 
 if __name__ == '__main__':

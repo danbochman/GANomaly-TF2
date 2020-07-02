@@ -32,7 +32,7 @@ def mse_dssim_mixed_loss(original_img, reconstructed_img):
 
 def weighted_binary_crossentropy_loss(y_true, y_pred):
     eps = 1e-7
-    anomaly_weight = 0.999
+    anomaly_weight = 0.99
     wce = anomaly_weight * y_true * tf.math.log(eps + y_pred) + \
           (1.0 - anomaly_weight) * (1.0 - y_true) * tf.math.log(eps + 1.0 - y_pred)
     return -tf.reduce_mean(wce)

@@ -1,6 +1,6 @@
 import glob
 from random import shuffle, seed, sample
-
+import tensorflow as tf
 import cv2
 import numpy as np
 
@@ -77,11 +77,11 @@ def test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", 
                 yield img_batch, label_batch
 
 
+
+
 if __name__ == '__main__':
     train_img_gen, val_img_gen = train_val_image_generator("/media/jpowell/hdd/Data/AIS/RO2_OK_images/")
     for i in range(10):
         train_img_sample = train_img_gen.__next__()
         val_img_sample = val_img_gen.__next__()
         print(train_img_sample[0].shape)
-        print(val_img_sample[0].shape)
-        print(' ')

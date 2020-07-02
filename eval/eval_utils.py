@@ -8,3 +8,4 @@ def save_precision_recall_curve(anomaly_scores, labels):
     PrecisionRecallDisplay(precision, recall, average_precision, 'CAE').plot()
     plt.show()
     plt.savefig('precision_recall_curve.png', dpi=400)
+    return precision, recall, thresholds

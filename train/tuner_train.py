@@ -53,7 +53,7 @@ def main():
     history = tuner_model.fit(test_img_gen,
                               callbacks=callbacks,
                               steps_per_epoch=100,
-                              epochs=100)
+                              epochs=5)
 
     print('Finished training successfully')
 
