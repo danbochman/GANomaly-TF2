@@ -1,6 +1,4 @@
 import cv2
-from dataloader.preprocessing import equalize_and_smooth
-
 
 
 def display_slices(img_slices):
@@ -24,7 +22,7 @@ def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
     return False
 
 
-def img_slice_and_label(img, crop_size, preprocess=False, bboxes=None):
+def img_slice_and_label(img, crop_size, bboxes):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
@@ -36,14 +34,11 @@ def img_slice_and_label(img, crop_size, preprocess=False, bboxes=None):
     for vertical in range(0, width - crop_size, v_interval):
         for horizontal in range(0, height - crop_size, h_interval):
             crop = img[horizontal:horizontal + crop_size, vertical:vertical + crop_size]
-            if preprocess:
-                crop = equalize_and_smooth(crop)
             img_slices.append(crop)
-            if bboxes is not None:
-                if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
-                    labels.append(1.0)
-                else:
-                    labels.append(0.0)
+            if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
+                labels.append(1.0)
+            else:
+                labels.append(0.0)
 
     return img_slices, labels
 

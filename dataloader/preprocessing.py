@@ -1,12 +1,10 @@
-import cv2
 import numpy as np
 
 
-def equalize_and_smooth(img, clipLimit=3.0, eq_win=(8, 8), median_size=3):
-    clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=eq_win)
-    crop_clahe = clahe.apply(img)
-    smoothed = cv2.medianBlur(crop_clahe, median_size)
-    return smoothed
+def center_and_scale(img):
+    img = img.astype(np.float32)
+    img = 2 * img - 1
+    return img
 
 
 def stack_and_expand(img_lst):
