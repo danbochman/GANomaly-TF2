@@ -36,3 +36,5 @@ def weighted_binary_crossentropy_loss(y_true, y_pred):
     wce = anomaly_weight * y_true * tf.math.log(eps + y_pred) + \
           (1.0 - anomaly_weight) * (1.0 - y_true) * tf.math.log(eps + 1.0 - y_pred)
     return -tf.reduce_mean(wce)
+
+
