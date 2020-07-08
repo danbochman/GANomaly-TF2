@@ -2,7 +2,7 @@ import numpy as np
 
 
 def center_and_scale(img):
-    img = img.astype(np.float32)
+    img = img / 255
     img = 2 * img - 1
     return img
 

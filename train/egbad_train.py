@@ -1,6 +1,7 @@
 import os
 
 import tensorflow as tf
+from tensorflow.keras.utils import Progbar
 
 from dataloader.image_generators import train_val_test_image_generator
 from models.gans import EGBAD
@@ -11,12 +12,15 @@ if len(PHYSICAL_DEVICES) > 0:
 
 
 def main():
-    TRAINING_STEPS = 10000
+    TRAINING_STEPS = 50001
     CROP_SIZE = 128
     LATENT_DIM = 64
     BATCH_SIZE = 32
-    LEARNING_RATE = 1e-5
+    LEARNING_RATE = 0.0002
+    DISPLAY_STEP = 100
+    RESIZE = 0.5
     LOG_DIR = './EGBAD/logs/'
+    SAVE_EVERY_N_STEPS = 1000
 
     image_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
     # image_data_path = "/media/jpowell/hdd/Data/AIS/8C3W_per_Camera/"
@@ -24,9 +28,11 @@ def main():
     train_img_gen, test_img_gen = train_val_test_image_generator(image_data_path,
                                                                  crop_size=CROP_SIZE,
                                                                  batch_size=BATCH_SIZE,
+                                                                 resize=RESIZE,
                                                                  normalize=True,
                                                                  val_frac=0.0)
-    input_shape = (CROP_SIZE, CROP_SIZE, 1)
+
+    input_shape = (int(CROP_SIZE * RESIZE), int(CROP_SIZE * RESIZE), 1)
     egbad = EGBAD(input_shape=input_shape, latent_dim=LATENT_DIM)
 
     gen = egbad.Gz
@@ -52,7 +58,12 @@ def main():
                                      discriminator=dis,
                                      encoder=enc)
 
+    # restore from checkpoint if exists
+    checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+
+    progres_bar = Progbar(TRAINING_STEPS)
     for step in range(TRAINING_STEPS):
+        progres_bar.update(step)
         img_batch, label_batch = next(train_img_gen)
         with tf.GradientTape() as gen_tape, tf.GradientTape() as dis_tape, tf.GradientTape() as enc_tape:
             # encoder
@@ -93,19 +104,26 @@ def main():
         optimizer_enc.apply_gradients(zip(grad_enc, enc.trainable_variables))
 
         # write summaries
-        with scalar_writer.as_default():
-            # discriminator parts
-            tf.summary.scalar("loss_discriminator", loss_dis, step=step)
-            tf.summary.scalar("loss_dis_enc", loss_dis_enc, step=step)
-            tf.summary.scalar("loss_dis_gen", loss_dis_gen, step=step)
-            # generator
-            tf.summary.scalar("loss_generator", loss_gen, step=step)
-            # encoder
-            tf.summary.scalar("loss_encoder", loss_enc, step=step)
+        if step % DISPLAY_STEP == 0:
+            with scalar_writer.as_default():
+                # discriminator parts
+                tf.summary.scalar("loss_discriminator", loss_dis, step=step)
+                tf.summary.scalar("loss_dis_enc", loss_dis_enc, step=step)
+                tf.summary.scalar("loss_dis_gen", loss_dis_gen, step=step)
+                # generator
+                tf.summary.scalar("loss_generator", loss_gen, step=step)
+                # encoder
+                tf.summary.scalar("loss_encoder", loss_enc, step=step)
 
-        with image_writer.as_default():
-            tf.summary.image('Original', tf.cast(img_batch, tf.uint8), step=step, max_outputs=4)
-            tf.summary.image('Reconstructed', tf.cast(x_rec, tf.uint8), step=step, max_outputs=4)
+            with image_writer.as_default():
+                # [-1, 1] -> [0, 255]
+                orig_display = tf.cast((img_batch + 1) * 127.5, tf.uint8)
+                rec_display = tf.cast((x_rec + 1) * 127.5, tf.uint8)
+                tf.summary.image('Original', orig_display, step=step, max_outputs=4)
+                tf.summary.image('Reconstructed', rec_display, step=step, max_outputs=4)
+
+        if step % SAVE_EVERY_N_STEPS == 0:
+            checkpoint.save(file_prefix=checkpoint_prefix)
 
 
 if __name__ == '__main__':

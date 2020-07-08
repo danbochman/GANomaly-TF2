@@ -9,7 +9,7 @@ from dataloader.cogwheel_slicer import img_slice_and_label
 from dataloader.preprocessing import stack_and_expand, center_and_scale
 
 
-def crop_generator(img_ann_list, batch_size=64, crop_size=256, shuffle=True, normalize=True, repeat=True):
+def crop_generator(img_ann_list, batch_size=64, crop_size=256, shuffle=True, normalize=True, resize=False, repeat=True):
     repeats = 2 ** 32 if repeat else 1
     random.seed(42)
 
@@ -20,11 +20,13 @@ def crop_generator(img_ann_list, batch_size=64, crop_size=256, shuffle=True, nor
 
         for img_path, ann_path in img_ann_list:
             img = cv2.imread(img_path, 0)
+
             if normalize:
                 img = center_and_scale(img)
+
             ann = load_annotation_file(ann_path)
             bboxes = annotation_to_bboxes_ltwh(ann)
-            img_slices, labels = img_slice_and_label(img, crop_size, bboxes=bboxes)
+            img_slices, labels = img_slice_and_label(img, crop_size, bboxes, resize=resize)
             img_slices = stack_and_expand(img_slices)
             labels = np.array(labels)
             for i in range(0, img_slices.shape[0], batch_size):
@@ -47,7 +49,8 @@ def separate_images_by_label(img_list, ann_list):
     return normal_img_list, defect_img_list
 
 
-def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", normalize=True, val_frac=0.0):
+def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
+                                   val_frac=0.0):
     # load img and annotation filepath recursively from folder
     img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
     ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
@@ -58,6 +61,7 @@ def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, e
     # split to train/val/test
     test_generator = crop_generator(defect_img_ann_list, batch_size=batch_size, crop_size=crop_size,
                                     normalize=normalize,
+                                    resize=resize,
                                     repeat=False,
                                     shuffle=False)
     if val_frac:
@@ -70,11 +74,13 @@ def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, e
         train_generator = crop_generator(train_img_ann_list, batch_size=batch_size, crop_size=crop_size,
                                          normalize=normalize,
                                          repeat=True,
-                                         shuffle=True)
+                                         shuffle=True,
+                                         resize=resize)
         val_generator = crop_generator(val_img_ann_list, batch_size=batch_size, crop_size=crop_size,
                                        normalize=normalize,
                                        repeat=True,
-                                       shuffle=False)
+                                       shuffle=False,
+                                       resize=resize)
 
         return train_generator, val_generator, test_generator
 
@@ -82,7 +88,8 @@ def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, e
         train_generator = crop_generator(normal_img_ann_list, batch_size=batch_size, crop_size=crop_size,
                                          normalize=normalize,
                                          repeat=True,
-                                         shuffle=True)
+                                         shuffle=True,
+                                         resize=resize)
 
         return train_generator, test_generator
 

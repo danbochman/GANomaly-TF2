@@ -22,7 +22,7 @@ def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
     return False
 
 
-def img_slice_and_label(img, crop_size, bboxes):
+def img_slice_and_label(img, crop_size, bboxes, resize=False):
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
@@ -34,6 +34,12 @@ def img_slice_and_label(img, crop_size, bboxes):
     for vertical in range(0, width - crop_size, v_interval):
         for horizontal in range(0, height - crop_size, h_interval):
             crop = img[horizontal:horizontal + crop_size, vertical:vertical + crop_size]
+
+            if resize:
+                width = int(crop.shape[1] * resize)
+                height = int(crop.shape[0] * resize)
+                crop = cv2.resize(crop, (width, height), interpolation=cv2.INTER_AREA)
+
             img_slices.append(crop)
             if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
                 labels.append(1.0)
