@@ -117,10 +117,10 @@ def main():
 
             with image_writer.as_default():
                 # [-1, 1] -> [0, 255]
-                orig_display = tf.cast((img_batch + 1) * 127.5, tf.uint8)
-                rec_display = tf.cast((x_rec + 1) * 127.5, tf.uint8)
-                tf.summary.image('Original', orig_display, step=step, max_outputs=4)
-                tf.summary.image('Reconstructed', rec_display, step=step, max_outputs=4)
+                orig_display = tf.cast((img_batch[0] + 1) * 127.5, tf.uint8)
+                rec_display = tf.cast((x_rec[0] + 1) * 127.5, tf.uint8)
+                tf.summary.image('Original', orig_display, step=step, max_outputs=2)
+                tf.summary.image('Reconstructed', rec_display, step=step, max_outputs=2)
 
         if step % SAVE_EVERY_N_STEPS == 0:
             checkpoint.save(file_prefix=checkpoint_prefix)
