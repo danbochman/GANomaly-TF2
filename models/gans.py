@@ -22,7 +22,7 @@ class EGBAD(object):
                 Flatten(),
                 Dense(latent_dim),
             ],
-            name='Encoder(x)'
+            name='Ex'
         )
 
         self._intermediate_shapes = self.infer_intermediate_shapes()
@@ -43,13 +43,13 @@ class EGBAD(object):
                 Conv2DTranspose(filters=1, kernel_size=4, strides=(2, 2), padding='same', activation='tanh'),
                 #  I believe tanh is to preserve symmetry with input scaled to [-1, 1]
             ],
-            name='Generator(z)'
+            name='Gz'
         )
 
         self.Dxz = Discriminator(input_shape, latent_dim).Dxz
 
     def infer_intermediate_shapes(self):
-        flatten_layer = self.encoder.layers[-2]
+        flatten_layer = self.Ex.layers[-2]
         return flatten_layer.input_shape[1:], flatten_layer.output_shape[1:][0]
 
 
@@ -69,7 +69,7 @@ class Discriminator(object):
                 Flatten(),
 
             ],
-            name='D(x)'
+            name='Dx'
         )
 
         self.Dz = tf.keras.Sequential(
@@ -79,14 +79,14 @@ class Discriminator(object):
                 LeakyReLU(0.1),
                 # Dropout here
             ],
-            name='D(z)'
+            name='Dz'
         )
 
         self.Dxz = self.discriminator(input_shape, latent_dim)
 
     def discriminator(self, input_shape, latent_dim):
-        x = Input(input_shape=input_shape)
-        z = Input(input_shape=(latent_dim,))
+        x = Input(shape=input_shape)
+        z = Input(shape=(latent_dim,))
         dx = self.Dx(x)
         dz = self.Dz(z)
         dxdz = Concatenate(axis=1)([dx, dz])
@@ -94,5 +94,5 @@ class Discriminator(object):
         intermediate_layer = LeakyReLU(0.1)(intermediate_layer)
         # Dropout(0.5)
         logits = Dense(1)(intermediate_layer)
-        discriminator = Model(inputs=[x, z], outputs=[logits, intermediate_layer], name='Discriminator(x, z)')
+        discriminator = Model(inputs=[x, z], outputs=[logits, intermediate_layer], name='Dxz')
         return discriminator

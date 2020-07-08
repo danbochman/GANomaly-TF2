@@ -3,7 +3,7 @@ import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 
-from dataloader.image_generators import train_val_image_generator
+from dataloader.image_generators import train_val_test_image_generator
 from models.autoencoders import CAE
 from train.losses import mse_dssim_mixed_loss
 from train.tensorboard_utils import XTensorBoard

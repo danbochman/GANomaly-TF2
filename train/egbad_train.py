@@ -1,14 +1,20 @@
-import tensorflow as tf
 import os
+
+import tensorflow as tf
+
 from dataloader.image_generators import train_val_test_image_generator
 from models.gans import EGBAD
 
+PHYSICAL_DEVICES = tf.config.experimental.list_physical_devices('GPU')
+if len(PHYSICAL_DEVICES) > 0:
+    tf.config.experimental.set_memory_growth(PHYSICAL_DEVICES[0], True)
+
 
 def main():
-    TRAINING_STEPS = 100
+    TRAINING_STEPS = 10000
     CROP_SIZE = 128
-    LATENT_DIM = 200
-    BATCH_SIZE = 128
+    LATENT_DIM = 64
+    BATCH_SIZE = 32
     LEARNING_RATE = 1e-5
     LOG_DIR = './EGBAD/logs/'
 
@@ -28,9 +34,9 @@ def main():
     dis = egbad.Dxz
 
     # optimizers
-    optimizer_dis = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta1=0.5, name='dis_optimizer')
-    optimizer_gen = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta1=0.5, name='gen_optimizer')
-    optimizer_enc = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta1=0.5, name='enc_optimizer')
+    optimizer_dis = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta_1=0.5, name='dis_optimizer')
+    optimizer_gen = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta_1=0.5, name='gen_optimizer')
+    optimizer_enc = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE, beta_1=0.5, name='enc_optimizer')
 
     # summary writers
     scalar_writer = tf.summary.create_file_writer(LOG_DIR + 'scalars')
@@ -58,8 +64,8 @@ def main():
             x_rec = gen(z_gen)
 
             # discriminator
-            logits_real, features_real = dis(z_gen, img_batch)
-            logits_fake, features_fake = dis(z, x_gen)
+            logits_real, features_real = dis([img_batch, z_gen])
+            logits_fake, features_fake = dis([x_gen, z])
 
             # losses
             # discriminator
@@ -98,8 +104,8 @@ def main():
             tf.summary.scalar("loss_encoder", loss_enc, step=step)
 
         with image_writer.as_default():
-            tf.summary.image('Original', img_batch, step=step, max_outputs=4)
-            tf.summary.image('Reconstructed', x_rec, step=step, max_outputs=4)
+            tf.summary.image('Original', tf.cast(img_batch, tf.uint8), step=step, max_outputs=4)
+            tf.summary.image('Reconstructed', tf.cast(x_rec, tf.uint8), step=step, max_outputs=4)
 
 
 if __name__ == '__main__':
