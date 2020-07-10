@@ -10,6 +10,18 @@ from dataloader.preprocessing import stack_and_expand, center_and_scale
 
 
 def crop_generator(img_ann_list, batch_size=64, crop_size=256, shuffle=True, normalize=True, resize=False, repeat=True):
+    """
+    Given a list of tuples (img_path, ann_path) yield batches of img_batch, label_batches.
+    Can shuffle the data, normalize the images, resize and be one-shot or infinite.
+    :param list img_ann_list: list of tuples (str img_path, str ann_path)
+    :param int batch_size: max batch size to yield (max may not be reached if bigger than img slices by crops
+    :param int crop_size: in what crop_size x crops_size shapes to slice the image (assuming it's bigger)
+    :param bool shuffle: whether to shuffle the data
+    :param bool normalize: whether to transform [0, 255] images to [-1, 1]
+    :param bool or float resize: resize the slices after cropping (usually to shrink even more for big models)
+    :param bool repeat: one shot iterator or infinite generator
+    :yield tuple: (img_batch, label_batch)
+    """
     repeats = 2 ** 32 if repeat else 1
     random.seed(42)
 
@@ -36,6 +48,11 @@ def crop_generator(img_ann_list, batch_size=64, crop_size=256, shuffle=True, nor
 
 
 def separate_images_by_label(img_list, ann_list):
+    """
+    filter globs of img list and ann list by whether they have bboxes in their annotation.json file
+    :param list img_list, ann_list: lists of string datapaths from glob.glob
+    :return tuple: normal_img_list (no bboxes), defect_img_list (bboxes of defects)
+    """
     normal_img_list = []
     defect_img_list = []
     for img_path, ann_path, in zip(img_list, ann_list):
@@ -49,11 +66,11 @@ def separate_images_by_label(img_list, ann_list):
     return normal_img_list, defect_img_list
 
 
-def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
+def train_val_test_image_generator(data_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
                                    val_frac=0.0):
     # load img and annotation filepath recursively from folder
-    img_list = [img for img in sorted(glob.glob(folder_path + "**/*." + ext, recursive=True))]
-    ann_list = [img for img in sorted(glob.glob(folder_path + "**/*." + "json", recursive=True))]
+    img_list = [img for img in sorted(glob.glob(data_path + "**/*." + ext, recursive=True))]
+    ann_list = [img for img in sorted(glob.glob(data_path + "**/*." + "json", recursive=True))]
 
     # separate images/annotation by label
     normal_img_ann_list, defect_img_ann_list = separate_images_by_label(img_list, ann_list)
@@ -85,6 +102,7 @@ def train_val_test_image_generator(folder_path, batch_size=128, crop_size=128, e
         return train_generator, val_generator, test_generator
 
     else:
+        # if there's not need for validation (e.g. for GANs) return only train and test generators
         train_generator = crop_generator(normal_img_ann_list, batch_size=batch_size, crop_size=crop_size,
                                          normalize=normalize,
                                          repeat=True,

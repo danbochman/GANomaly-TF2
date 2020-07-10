@@ -2,27 +2,41 @@ import cv2
 
 
 def display_slices(img_slices):
+    """ simple function to show the result of your img_slices from function img_slice_and_labels"""
     for i, img in enumerate(img_slices):
         cv2.imshow('Image Slice ' + str(i), img)
         cv2.waitKey(0)
 
 
-def img_roi(img, upper_bound, lower_bound):
-    cropped_img = img[upper_bound:-lower_bound, :]
-    return cropped_img
-
-
 def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
+    """
+    Check whether there's a bbox inside the crop
+    :param int vertical: y coordinate
+    :param int horizontal: x coordinate
+    :param int interval: size of height or width from coordinates
+    :param list bboxes: list of bboxes in (y, x, width, height) format
+    :return float: 1.0 if crop contains bbox else 0.0
+    """
     for y, x, w, h in bboxes:
         cond_1 = (vertical <= y) and (y + w <= vertical + interval)
         cond_2 = (horizontal <= x) and (x + h <= horizontal + interval)
         if all([cond_1, cond_2]):
-            return True
+            return 1.0
 
-    return False
+    return 0.0
 
 
-def img_slice_and_label(img, crop_size, bboxes, resize=False):
+def img_slice_and_label(img, crop_size, bboxes=None, resize=False):
+    """
+    Takes an image and slices it to squares of crop_size x crop_size
+    Can additionally resize the crops (usually to shrink to smaller img than crop_size)
+    if bboxes from annotations are available, can label the crops 1 if bbox is present or 0 if not
+    :param np.array img: array of image
+    :param int crop_size: crop_size by which to slice
+    :param list bboxes: list bboxes in (y, x, width, height) format
+    :param bool or float resize: resize the slices after cropping (usually to shrink even more for big models)
+    :return tuple (img_slices, labels): tuple of 2 lists img_slices and labels (all 0.0 if no bboxes)
+    """
     width = img.shape[1]
     height = img.shape[0]
     img_slices = []
@@ -41,8 +55,9 @@ def img_slice_and_label(img, crop_size, bboxes, resize=False):
                 crop = cv2.resize(crop, (width, height), interpolation=cv2.INTER_AREA)
 
             img_slices.append(crop)
-            if bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes):
-                labels.append(1.0)
+            if bboxes:
+                label = bboxes_included_in_crop(vertical, horizontal, crop_size, bboxes)
+                labels.append(label)
             else:
                 labels.append(0.0)
 
@@ -50,15 +65,14 @@ def img_slice_and_label(img, crop_size, bboxes, resize=False):
 
 
 def necessary_overlap_region(axis, interval):
+    """
+    computes the amount of overlap necessary between crops to take steps to slice the image completely without missing
+    edges
+    :param int axis: length of axis H or W
+    :param int interval: the crop_size interval
+    :return int overlap_region: minimum amount of pixels necessary to overlap between to slice the image symmetrically
+    without missing the edges
+    """
     quotient, remainder = divmod(axis - interval, interval)
     overlap_region = int(remainder / (quotient))
     return overlap_region
-
-
-if __name__ == '__main__':
-    img_path = "D:/Razor Labs/Projects/AIS/data/RO2/RO2_OK_images/Cam1/img/PART1_PART1_Cam1_IO__23440-R02-C000_right_000154.png"
-    img = cv2.imread(img_path, 0)
-    # img = img_roi(img, *RO2_BOUNDS)
-    img_slices, _ = img_slice_and_label(img, 256)
-    print(len(img_slices))
-    display_slices(img_slices)

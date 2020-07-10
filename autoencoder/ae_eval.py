@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, classification_report
-from sklearn.metrics import precision_recall_curve, average_precision_score, PrecisionRecallDisplay
 from tqdm import tqdm
 
 from dataloader.image_generators import test_image_generator, train_val_image_generator
-from models.autoencoders import CAE
+from autoencoder.ae_model import CAE
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
@@ -122,7 +121,7 @@ def main():
     defect_data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
     # normal_data_path = "/media/jpowell/hdd/Data/AIS/RO2_OK_images/"
     # path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/8C3W_128x_256d_best_model.h5'
-    path_to_weights = '/home/jpowell/PycharmProjects/AIS/ais_aae/train/RO2_AC_128x_64d_best_model.h5'
+    path_to_weights = '/train/AE/weights/RO2_AC_128x_64d_best_model.h5'
 
     nn_params = {
         'crop_size': 128,  # 128 for RO2, 256 for 8C3W

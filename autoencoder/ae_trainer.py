@@ -3,10 +3,9 @@ import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 
-from dataloader.image_generators import train_val_test_image_generator
-from models.autoencoders import CAE
-from train.losses import mse_dssim_mixed_loss
-from train.tensorboard_utils import XTensorBoard
+from autoencoder.ae_model import CAE
+from autoencoder.ae_loss_functions import mse_dssim_mixed_loss
+from eval_utils.tensorboard_utils import XTensorBoard
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
