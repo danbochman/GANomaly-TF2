@@ -22,7 +22,8 @@ def train(data_generator,
           save_checkpoint_every_n_steps,
           logs_dir):
     """
-    Trainer function for the BiGAN model, all function parameters explanations are detailed in the egbad_train_main.py flags.
+    Trainer function for the GANomaly model, all function parameters explanations are detailed in the
+    ganomaly_train_main.py flags.
     The function flow is as follows:
     1. Initializes a data generator from the data_path (while preprocessing the images),
     2. initializes the optimizers, tensorboard & checkpoints writers
@@ -71,8 +72,8 @@ def train(data_generator,
     progres_bar = Progbar(training_steps)
     for step in range(training_steps):
         progres_bar.update(step)
-        img_batch, label_batch = next(data_generator)
         for _ in range(generator_steps):
+            img_batch, label_batch = next(data_generator)
             with tf.GradientTape() as gen_tape:
                 # encoder
                 z = enc_x(img_batch)
@@ -103,6 +104,8 @@ def train(data_generator,
 
         for _ in range(discriminator_steps):
             with tf.GradientTape() as dis_tape:
+                img_batch, label_batch = next(data_generator)
+
                 # encoder
                 z = enc_x(img_batch)
 

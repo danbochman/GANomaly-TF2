@@ -5,14 +5,14 @@ from dataloader.image_generators import train_val_test_image_generator
 from ganomaly.ganomaly_trainer import train
 
 FLAGS = flags.FLAGS
-flags.DEFINE_integer("training_steps", 100000, "Number of training steps")
+flags.DEFINE_integer("training_steps", 10000, "Number of training steps")
 flags.DEFINE_integer("crop_size", 128, "Shape of (S, S) to take from image")
 flags.DEFINE_integer("latent_dim", 128, "Size of latent representation of model")
 flags.DEFINE_integer("batch_size", 32, "Size of training batches")
 flags.DEFINE_float("lr", 0.0002, "Learning rate for optimizers")
-flags.DEFINE_integer("generator_steps", 10, "Learning rate for optimizers")
-flags.DEFINE_integer("discriminator_steps", 10, "Learning rate for optimizers")
-flags.DEFINE_list("generator_loss_weights", [50, 1, 1], "Learning rate for optimizers")
+flags.DEFINE_integer("generator_steps", 10, "how many steps should the generator train before switching")
+flags.DEFINE_integer("discriminator_steps", 10, "how many steps should the discriminator train before switching")
+flags.DEFINE_list("generator_loss_weights", [50, 1, 1], "weights for reconstruction, encoding, adversarial losses")
 
 flags.DEFINE_integer("display_step", 50, "Writing frequency for TensorBoard")
 flags.DEFINE_float("resize", 1.0, "Resizing factor for crops if necessary to fit in e.g. 64x64xc crops")
