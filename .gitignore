@@ -1,6 +1,5 @@
 .idea/*
 .gitignore
-train/logs/*
 *.h5
 *.v2
 *.npz
