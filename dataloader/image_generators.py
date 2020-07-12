@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from dataloader.annotation_utils import load_annotation_file, annotation_to_bboxes_ltwh
-from dataloader.cogwheel_slicer import img_slice_and_label
+from dataloader.cogwheel_slicer import img_slice_and_label, display_slices
 from dataloader.preprocessing import stack_and_expand, center_and_scale
 
 
@@ -114,7 +114,9 @@ def train_val_test_image_generator(data_path, batch_size=128, crop_size=128, ext
 
 if __name__ == '__main__':
     data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
-    train_generator, val_generator, test_generator = train_val_test_image_generator(data_path, val_frac=0.2)
+    train_generator, val_generator, test_generator = train_val_test_image_generator(data_path,
+                                                                                    batch_size=128,
+                                                                                    val_frac=0.2)
     for i in range(10):
         train_img_sample = train_generator.__next__()
         val_img_sample = val_generator.__next__()
@@ -122,3 +124,5 @@ if __name__ == '__main__':
         print(train_img_sample[0].shape)
         print(val_img_sample[0].shape)
         print(test_img_sample[0].shape)
+        train_batch, label_batch = train_img_sample
+        display_slices(train_batch)

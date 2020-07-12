@@ -4,4 +4,5 @@
 *.v2
 *.npz
 *.png
+*.pyc
 ganomaly/logs/*

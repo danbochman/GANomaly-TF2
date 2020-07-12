@@ -25,22 +25,27 @@ def train(data_generator,
     Trainer function for the GANomaly model, all function parameters explanations are detailed in the
     ganomaly_train_main.py flags.
     The function flow is as follows:
-    1. Initializes a data generator from the data_path (while preprocessing the images),
-    2. initializes the optimizers, tensorboard & checkpoints writers
-    3. restores from checkpoint if exists
-    4. Training loop:
-        - grab img batch from generator
-        - encode img with E(x)
-        - sample from latent space (create z)
-        - generate img from z with generator D(z)
-        - reconstruct original image from encoding with generator (for display)
-        - feed (image, latent representation) through discriminator
-        - compute losses
+    1. initializes the model, optimizers, tensorboard & checkpoints writers
+    2. restores from checkpoint if exists
+    3. Training loop:
+        - train generator for k steps
+        - train discriminator for j steps
+        each forward pass looks like this:
+            - encode img with E(x) -> get latent variable z
+            - decode latent variable z with G(z) -> get reconstructed img x_hat
+            - encode x_hat with E(x_hat) -> get latent variable z_hat
+            - feed x, x_hat to discriminator
+        compute losses:
+            - reconstruction loss L1(x-x_hat)
+            - encoding loss L2(z-z_hat)
+            - adversarial loss L2(x_features-x_hat_features)
+            - discriminator loss BCE
+
         - take optimizer steps for each submodel
         - write to tensorboard / save checkpoint every n steps
     """
 
-    # init BiGAN model
+    # init GANomaly model
     ganomaly = GANomaly(input_shape=input_shape, latent_dim=latent_dim)
     enc_x = ganomaly.Ex
     dec_z = ganomaly.Gz
@@ -142,8 +147,8 @@ def train(data_generator,
                 # [-1, 1] -> [0, 255]
                 orig_display = tf.cast((img_batch + 1) * 127.5, tf.uint8)
                 rec_display = tf.cast((x_hat + 1) * 127.5, tf.uint8)
-                tf.summary.image('Original', orig_display, step=step, max_outputs=4)
-                tf.summary.image('Reconstructed', rec_display, step=step, max_outputs=4)
+                concatenated_img = tf.concat([orig_display, rec_display], axis=2)
+                tf.summary.image('Original | Reconstructed', concatenated_img, step=step, max_outputs=8)
 
         if step % save_checkpoint_every_n_steps == 0:
             checkpoint.save(file_prefix=checkpoint_prefix)
