@@ -16,7 +16,7 @@ flags.DEFINE_list("generator_loss_weights", [50, 1, 1], "weights for reconstruct
 
 flags.DEFINE_integer("display_step", 50, "Writing frequency for TensorBoard")
 flags.DEFINE_float("resize", 1.0, "Resizing factor for crops if necessary to fit in e.g. 64x64xc crops")
-flags.DEFINE_integer("save_checkpoint_every_n_steps", 10000, "Frequency for saving model checkpoints")
+flags.DEFINE_integer("save_checkpoint_every_n_steps", 1000, "Frequency for saving model checkpoints")
 flags.DEFINE_string("logs_dir", './ganomaly/logs', "relative dir path to save TB events and checkpoints")
 flags.DEFINE_string("data_path", "/media/jpowell/hdd/Data/AIS/RO2_OK_images/", "absolute dir path for image dataset")
 
