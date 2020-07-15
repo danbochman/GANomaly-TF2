@@ -112,6 +112,35 @@ def train_val_test_image_generator(data_path, batch_size=128, crop_size=128, ext
         return train_generator, test_generator
 
 
+def create_dataset_for_classifier(data_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
+                                  val_frac=0.0):
+    # load img and annotation filepath recursively from folder
+    img_list = [img for img in sorted(glob.glob(data_path + "**/*." + ext, recursive=True))]
+    ann_list = [img for img in sorted(glob.glob(data_path + "**/*." + "json", recursive=True))]
+
+    # separate images/annotation by label
+    normal_img_ann_list, defect_img_ann_list = separate_images_by_label(img_list, ann_list)
+
+    # split to train/val
+    num_images = len(defect_img_ann_list)
+    train_val_split = int(num_images * (1 - val_frac))
+    train_img_ann_list = defect_img_ann_list[:train_val_split]
+    val_img_ann_list = defect_img_ann_list[train_val_split:]
+
+    train_generator = crop_generator(train_img_ann_list, batch_size=batch_size, crop_size=crop_size,
+                                     normalize=normalize,
+                                     repeat=True,
+                                     shuffle=True,
+                                     resize=resize)
+    val_generator = crop_generator(val_img_ann_list, batch_size=batch_size, crop_size=crop_size,
+                                   normalize=normalize,
+                                   repeat=True,
+                                   shuffle=False,
+                                   resize=resize)
+
+    return list(train_generator), list((val_generator))
+
+
 if __name__ == '__main__':
     data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
     train_generator, val_generator, test_generator = train_val_test_image_generator(data_path,

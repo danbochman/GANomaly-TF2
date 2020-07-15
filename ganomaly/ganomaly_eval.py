@@ -76,8 +76,7 @@ def eval_contours(data_generator,
                   min_area):
     """
     Evaluation step for the GANomaly model. Initializes model and restores from checkpoint, loops over labeled test
-    data, computes the encoding L2 loss for input data and normalizes scores to be from [0, 1].
-    Displays PR curve for anomaly scores vs. labels.
+    data, finds contours from difference map (x - x_hat)
     """
 
     # init GANomaly model
