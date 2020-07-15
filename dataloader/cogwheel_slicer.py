@@ -8,20 +8,30 @@ def display_slices(img_slices):
         cv2.waitKey(0)
 
 
-def bboxes_included_in_crop(vertical, horizontal, interval, bboxes):
+def bboxes_included_in_crop(vertical, horizontal, interval, bboxes, partial=True):
     """
     Check whether there's a bbox inside the crop
     :param int vertical: y coordinate
     :param int horizontal: x coordinate
     :param int interval: size of height or width from coordinates
     :param list bboxes: list of bboxes in (y, x, width, height) format
+    :param bool partial: whether partial bboxes inside crops should be counted as included
     :return float: 1.0 if crop contains bbox else 0.0
     """
     for y, x, w, h in bboxes:
-        cond_1 = (vertical <= y) and (y + w <= vertical + interval)
-        cond_2 = (horizontal <= x) and (x + h <= horizontal + interval)
-        if all([cond_1, cond_2]):
-            return 1.0
+        if partial:
+            cond_1 = (vertical <= y) and (y <= vertical + interval)
+            cond_2 = (horizontal <= x) and (x <= horizontal + interval)
+            cond_3 = (vertical <= y + w) and (y + w <= vertical + interval)
+            cond_4 = (horizontal <= x + h) and (x + h <= horizontal + interval)
+            if all([cond_1, cond_2]) or all([cond_3, cond_4]):
+                return 1.0
+
+        else:
+            cond_1 = (vertical <= y) and (y + w <= vertical + interval)
+            cond_2 = (horizontal <= x) and (x + h <= horizontal + interval)
+            if all([cond_1, cond_2]):
+                return 1.0
 
     return 0.0
 

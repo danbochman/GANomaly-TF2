@@ -1,16 +1,16 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.measure import compare_ssim
 from sklearn.metrics import precision_recall_curve, average_precision_score, PrecisionRecallDisplay
 
 
-def save_precision_recall_curve(anomaly_scores, labels):
+def display_precision_recall_curve(anomaly_scores, labels, save_png=False):
     precision, recall, thresholds = precision_recall_curve(labels, anomaly_scores)
     average_precision = average_precision_score(labels, anomaly_scores)
     PrecisionRecallDisplay(precision, recall, average_precision, 'CAE').plot()
     plt.show()
-    plt.savefig('precision_recall_curve.png', dpi=400)
+    if save_png:
+        plt.savefig('precision_recall_curve.png', dpi=400)
     return precision, recall, thresholds
 
 
@@ -44,21 +44,21 @@ def show_triptych(inputs, reconstructed, diff_map, crop_size, labels=None):
         cv2.destroyAllWindows()
 
 
-def show_ssim(inputs, reconstructed, crop_size, labels=None):
-    for i in range(inputs.shape[0]):
-        image = inputs[i]
-        reconst = reconstructed[i].numpy().astype(np.float64)
-        score, diff = compare_ssim(image[:, :, 0], reconst[:, :, 0], gaussian_weights=True, full=True)
-        diff = np.expand_dims((diff * crop_size).astype("uint8"), axis=-1)
-        triptych = np.zeros((256, crop_size * 3, 1))
-        triptych[:, :crop_size, :] = inputs[i]
-        triptych[:, crop_size:crop_size * 2, :] = reconstructed[i]
-        triptych[:, crop_size * 2:crop_size * 3, :] = diff
+def show_histogram_and_pr_curve(anomaly_scores, labels):
+    # normalize anomaly scores
+    anomaly_scores = np.array(anomaly_scores)
+    as_max = np.max(anomaly_scores)
+    as_min = np.min(anomaly_scores)
+    anomaly_scores = (anomaly_scores - as_min) / (as_max - as_min)
 
-        label = 'Unknown'
-        if labels is not None:
-            label = str(labels[i])
-        cv2.imshow(f'Original     |     Reconstructed     |     SSIM Difference Map     |     Label - {label}',
-                   triptych.astype(np.uint8))
+    # plot histogram w.r.t label
+    labels = np.array(labels)
+    normal = anomaly_scores[labels == 0]
+    defect = anomaly_scores[labels == 1]
+    plt.hist(normal, bins=100, alpha=0.5, label='normal', density=True)
+    plt.hist(defect, bins=100, alpha=0.5, label='defect', density=True)
+    plt.legend(loc='upper right')
+    plt.show()
 
-        cv2.waitKey(0)
+    # plot precision recall curve
+    display_precision_recall_curve(anomaly_scores, labels)
