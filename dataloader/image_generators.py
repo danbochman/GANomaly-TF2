@@ -112,8 +112,8 @@ def train_val_test_image_generator(data_path, batch_size=128, crop_size=128, ext
         return train_generator, test_generator
 
 
-def create_dataset_for_classifier(data_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
-                                  val_frac=0.0):
+def train_val_for_classifier(data_path, batch_size=128, crop_size=128, ext="png", normalize=True, resize=False,
+                             val_frac=0.0):
     # load img and annotation filepath recursively from folder
     img_list = [img for img in sorted(glob.glob(data_path + "**/*." + ext, recursive=True))]
     ann_list = [img for img in sorted(glob.glob(data_path + "**/*." + "json", recursive=True))]
@@ -138,7 +138,7 @@ def create_dataset_for_classifier(data_path, batch_size=128, crop_size=128, ext=
                                    shuffle=False,
                                    resize=resize)
 
-    return list(train_generator), list((val_generator))
+    return train_generator, val_generator
 
 
 if __name__ == '__main__':

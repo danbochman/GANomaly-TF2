@@ -1,6 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, classification_report
 from sklearn.metrics import precision_recall_curve, average_precision_score, PrecisionRecallDisplay
 
 
@@ -62,3 +63,10 @@ def show_histogram_and_pr_curve(anomaly_scores, labels):
 
     # plot precision recall curve
     display_precision_recall_curve(anomaly_scores, labels)
+
+
+def display_confusion_matrix(predictions, labels):
+    cm = confusion_matrix(labels, predictions)
+    print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
+    ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot(values_format='d')
+    plt.show()

@@ -1,9 +1,8 @@
-import matplotlib.pyplot as plt
 from absl import app
 from absl import flags
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, classification_report
 
 from dataloader.image_generators import train_val_test_image_generator
+from eval_utils.visualization_utils import display_confusion_matrix
 from ganomaly.ganomaly_eval import eval_scores, eval_contours
 
 FLAGS = flags.FLAGS
@@ -58,11 +57,7 @@ def main(argv=None):
                                             threshold=FLAGS.diff_threshold,
                                             min_percentile=FLAGS.min_percentile,
                                             min_area=FLAGS.min_area)
-
-    cm = confusion_matrix(labels, predictions)
-    print(classification_report(labels, predictions, target_names=['Normal', 'Anomaly']))
-    ConfusionMatrixDisplay(cm, display_labels=['Normal', 'Anomaly']).plot()
-    plt.show()
+        display_confusion_matrix(predictions, labels)
 
 
 if __name__ == '__main__':
