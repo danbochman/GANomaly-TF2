@@ -31,7 +31,7 @@ def confusion_matrix_figure(cm, class_names):
       class_names (array, shape = [n]): String names of the integer classes
     """
     figure = plt.figure(figsize=(8, 8))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.cool)
     plt.title("Confusion matrix")
     plt.colorbar()
     tick_marks = np.arange(len(class_names))
