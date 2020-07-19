@@ -6,9 +6,9 @@ from dataloader.image_generators import train_val_test_image_generator
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("training_steps", 1001, "Number of training steps")
-flags.DEFINE_integer("crop_size", 128, "Shape of (S, S) to take from image")
+flags.DEFINE_integer("crop_size", 160, "Shape of (S, S) to take from image | Recommended: 128, 160, 200, 256")
 flags.DEFINE_integer("latent_dim", 200, "Size of latent representation of model")
-flags.DEFINE_integer("batch_size", 64, "Size of training batches")
+flags.DEFINE_integer("batch_size", 32, "Size of training batches")
 flags.DEFINE_float("lr", 0.0002, "Learning rate for optimizers")
 flags.DEFINE_integer("generator_steps", 10, "how many steps should the generator train before switching")
 flags.DEFINE_integer("discriminator_steps", 10, "how many steps should the discriminator train before switching")
@@ -22,7 +22,7 @@ flags.DEFINE_string("data_path", "/media/jpowell/hdd/Data/AIS/RO2_OK_images/", "
 
 
 def main(argv=None):
-    # init data generator (64x64 or 32x32 size images are recommended - modify with crop_size & resize)
+    # init data generator
     train_img_gen, test_img_gen = train_val_test_image_generator(data_path=FLAGS.data_path,
                                                                  crop_size=FLAGS.crop_size,
                                                                  batch_size=FLAGS.batch_size,

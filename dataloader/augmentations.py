@@ -2,8 +2,8 @@ import tensorflow as tf
 
 AUGMENTATIONS = [
     lambda x: tf.image.random_flip_left_right(x),
-    lambda x: tf.image.random_brightness(x, 0.1),
-    lambda x: tf.image.random_contrast(x, 0, 1),
+    lambda x: tf.image.random_brightness(x, 0.3),
+    lambda x: tf.image.random_contrast(x, 0, 3),
 ]
 
 

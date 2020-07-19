@@ -144,6 +144,7 @@ def train_val_for_classifier(data_path, batch_size=128, crop_size=128, ext="png"
 if __name__ == '__main__':
     data_path = "/media/jpowell/hdd/Data/AIS/RO2_NG_images/"
     train_generator, val_generator, test_generator = train_val_test_image_generator(data_path,
+                                                                                    crop_size=200,
                                                                                     batch_size=128,
                                                                                     val_frac=0.2)
     for i in range(10):

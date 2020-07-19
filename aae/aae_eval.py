@@ -5,7 +5,7 @@ from scipy import ndimage
 from tqdm import tqdm
 
 from eval_utils.visualization_utils import show_histogram_and_pr_curve
-from ganomaly.ganomaly_model import GANomaly
+from aae.aae_model import AAE
 
 PHYSICAL_DEVICES = tf.config.experimental.list_physical_devices('GPU')
 if len(PHYSICAL_DEVICES) > 0:
@@ -19,22 +19,20 @@ def eval_scores(data_generator,
                 display,
                 threshold):
     """
-    Evaluation step for the GANomaly model. Initializes model and restores from checkpoint, loops over labeled test
-    data, computes the encoding L2 loss for input data and normalizes scores to be from [0, 1].
+    Evaluation step for the AAE model. Initializes model and restores from checkpoint, loops over labeled test
+    data, computes the reconstruction L2 loss for input data and normalizes scores to be from [0, 1].
     Displays PR curve for anomaly scores vs. labels.
     """
 
     # init GANomaly model
-    ganomaly = GANomaly(input_shape=input_shape, latent_dim=latent_dim)
-    enc_x = ganomaly.Ex
-    dec_z = ganomaly.Gz
-    enc_x_hat = ganomaly.Ex_hat
+    aae = AAE(input_shape=input_shape, latent_dim=latent_dim)
+    enc_x = aae.Ex
+    dec_z = aae.Gz
 
     # checkpoint writer
     checkpoint_dir = logs_dir + '/checkpoints'
     checkpoint = tf.train.Checkpoint(enc_x=enc_x,
-                                     dec_z=dec_z,
-                                     enc_x_hat=enc_x_hat)
+                                     dec_z=dec_z)
     # restore from checkpoint
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
@@ -47,11 +45,8 @@ def eval_scores(data_generator,
         # decoder
         x_hat = dec_z(z, training=False)
 
-        # 2nd encoder
-        z_hat = enc_x_hat(x_hat, training=False)
-
-        # encoder L1 distance (recommended by paper)
-        anomaly_score = tf.norm(z - z_hat, ord=1, axis=1)
+        # reconstruction L1 distance
+        anomaly_score = tf.norm(img_batch - x_hat, ord=1, axis=1)
 
         labels.extend(label_batch)
         anomaly_scores.extend(anomaly_score)
@@ -75,21 +70,20 @@ def eval_contours(data_generator,
                   min_percentile,
                   min_area):
     """
-    Evaluation step for the GANomaly model. Initializes model and restores from checkpoint, loops over labeled test
+    Evaluation step for the AAE model. Initializes model and restores from checkpoint, loops over labeled test
     data, finds contours from difference map (x - x_hat)
     """
 
     # init GANomaly model
-    ganomaly = GANomaly(input_shape=input_shape, latent_dim=latent_dim)
-    enc_x = ganomaly.Ex
-    dec_z = ganomaly.Gz
-    enc_x_hat = ganomaly.Ex_hat
+    aae = AAE(input_shape=input_shape, latent_dim=latent_dim)
+    enc_x = aae.Ex
+    dec_z = aae.Gz
 
     # checkpoint writer
     checkpoint_dir = logs_dir + '/checkpoints'
     checkpoint = tf.train.Checkpoint(enc_x=enc_x,
-                                     dec_z=dec_z,
-                                     enc_x_hat=enc_x_hat)
+                                     dec_z=dec_z)
+
     # restore from checkpoint
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
