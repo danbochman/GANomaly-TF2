@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.utils import Progbar
 
 from ganomaly.ganomaly_model import GANomaly
+from dataloader.augmentations import augment
 
 PHYSICAL_DEVICES = tf.config.experimental.list_physical_devices('GPU')
 if len(PHYSICAL_DEVICES) > 0:
@@ -18,6 +19,7 @@ def train(data_generator,
           generator_steps,
           lr,
           gen_loss_weights,
+          do_augmentations,
           display_step,
           save_checkpoint_every_n_steps,
           logs_dir):
@@ -77,8 +79,16 @@ def train(data_generator,
     progres_bar = Progbar(training_steps)
     for step in range(training_steps):
         progres_bar.update(step)
+
+        # generator phase
         for _ in range(generator_steps):
+
+            # grab data from generator and (optional) augment
             img_batch, label_batch = next(data_generator)
+            img_batch = tf.cast(img_batch, tf.float32)
+            if do_augmentations:
+                img_batch = augment(img_batch)
+
             with tf.GradientTape() as gen_tape:
                 # encoder
                 z = enc_x(img_batch)
@@ -107,9 +117,16 @@ def train(data_generator,
                 # apply gradients
                 optimizer_gen.apply_gradients(zip(grad_gen, generator_vars))
 
+        # discriminator phase
         for _ in range(discriminator_steps):
+
+            # grab data from generator and (optional) augment
+            img_batch, label_batch = next(data_generator)
+            img_batch = tf.cast(img_batch, tf.float32)
+            if do_augmentations:
+                img_batch = augment(img_batch)
+
             with tf.GradientTape() as dis_tape:
-                img_batch, label_batch = next(data_generator)
 
                 # encoder
                 z = enc_x(img_batch)
