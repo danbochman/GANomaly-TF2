@@ -1,6 +1,6 @@
 # GANomaly: Semi-Supervised Anomaly Detection via Adversarial Training | TensorFlow 2.x Implementation
 
-This repository was created as a lean, easy to use & adapt implementation of the ![GANomaly architecture](https://arxiv.org/abs/1805.06725v3) 17 May 2018 paper.
+This repository was created as a lean, easy to use & adapt implementation of the [GANomaly architecture](https://arxiv.org/abs/1805.06725v3) 17 May 2018 paper.
 ![GANomaly Architecture](https://miro.medium.com/max/1648/1*8TODMy_xoaOyleOOZ5S_EQ.png)
 
 ## Setup
